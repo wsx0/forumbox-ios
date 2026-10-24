@@ -5,7 +5,7 @@ final class SitesViewController: UITableViewController {
     private lazy var searchButton: UIButton = {
         let button = UIButton(type: .system)
         var config = UIButton.Configuration.plain()
-        config.title = "搜索 7 个论坛"
+        config.title = "搜索全部论坛"
         config.image = UIImage(systemName: "sparkles")
         config.imagePadding = 8
         config.baseForegroundColor = Theme.textDim
@@ -25,6 +25,15 @@ final class SitesViewController: UITableViewController {
         return button
     }()
 
+    private lazy var themeButton = UIBarButtonItem(image: UIImage(systemName: "paintpalette"),
+                                                   style: .plain,
+                                                   target: self,
+                                                   action: #selector(showThemePicker))
+
+    private lazy var addButton = UIBarButtonItem(barButtonSystemItem: .add,
+                                                 target: self,
+                                                 action: #selector(addSite))
+
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "论坛盒子"
@@ -35,6 +44,8 @@ final class SitesViewController: UITableViewController {
         tableView.contentInset = UIEdgeInsets(top: 6, left: 0, bottom: 24, right: 0)
         tableView.register(CardCell.self, forCellReuseIdentifier: "CardCell")
         navigationItem.backButtonDisplayMode = .minimal
+        navigationItem.leftBarButtonItem = themeButton
+        navigationItem.rightBarButtonItems = [addButton, editButtonItem]
         navigationController?.navigationBar.prefersLargeTitles = false
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
         setupSearchHeader()
@@ -54,9 +65,132 @@ final class SitesViewController: UITableViewController {
         tableView.tableHeaderView = header
     }
 
+    // MARK: - 导航动作
+
     @objc private func openSearch() {
         navigationController?.pushViewController(SearchViewController(style: .plain), animated: true)
     }
+
+    @objc private func addSite() {
+        presentEditor(for: nil, at: nil)
+    }
+
+    // MARK: - 主题切换
+
+    @objc private func showThemePicker() {
+        let sheet = UIAlertController(title: "选择主题", message: nil, preferredStyle: .actionSheet)
+        for style in ThemeManager.Style.allCases {
+            let isCurrent = ThemeManager.shared.style == style
+            let title = isCurrent ? "\(style.displayName)  ✓" : style.displayName
+            sheet.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                self?.applyTheme(style)
+            })
+        }
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        if let pop = sheet.popoverPresentationController {
+            pop.barButtonItem = themeButton
+        }
+        present(sheet, animated: true)
+    }
+
+    private func applyTheme(_ style: ThemeManager.Style) {
+        ThemeManager.shared.setStyle(style)
+        Theme.applyAppearance()
+        guard let window = view.window else { return }
+        let root = SitesViewController(style: .plain)
+        let nav = UINavigationController(rootViewController: root)
+        window.rootViewController = nav
+        window.tintColor = Theme.accent
+        UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: nil, completion: nil)
+    }
+
+    // MARK: - 站点增删改
+
+    private func presentEditor(for site: Site?, at index: Int?) {
+        let alert = UIAlertController(title: site == nil ? "添加论坛" : "编辑论坛",
+                                      message: nil,
+                                      preferredStyle: .alert)
+        let placeholders = ["名称（必填）", "网址（必填，http/https）", "备注（可空）",
+                            "Emoji（可空）", "搜索页地址（可空）"]
+        let values: [String?] = [site?.name, site?.url, site?.note, site?.emoji, site?.searchURL]
+        for i in 0..<5 {
+            alert.addTextField { field in
+                field.placeholder = placeholders[i]
+                field.text = values[i]
+                field.clearButtonMode = .whileEditing
+                if i == 1 {
+                    field.keyboardType = .URL
+                    field.autocapitalizationType = .none
+                    field.autocorrectionType = .no
+                }
+                if i == 4 {
+                    field.keyboardType = .URL
+                    field.autocapitalizationType = .none
+                    field.autocorrectionType = .no
+                }
+            }
+        }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "保存", style: .default) { [weak self, weak alert] _ in
+            guard let self = self, let fields = alert?.textFields, fields.count == 5 else { return }
+            let name = (fields[0].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let url = (fields[1].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let note = (fields[2].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let emoji = (fields[3].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let search = (fields[4].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let lower = url.lowercased()
+            guard !name.isEmpty, lower.hasPrefix("http://") || lower.hasPrefix("https://") else {
+                self.presentNotice("名称和网址必填，网址需要以 http:// 或 https:// 开头")
+                return
+            }
+            if !search.isEmpty {
+                let lowerSearch = search.lowercased()
+                guard lowerSearch.hasPrefix("http://") || lowerSearch.hasPrefix("https://") else {
+                    self.presentNotice("搜索页地址需要以 http:// 或 https:// 开头，或留空")
+                    return
+                }
+            }
+            let newSite = Site(name: name,
+                               note: note,
+                               url: url,
+                               searchURL: search.isEmpty ? nil : search,
+                               emoji: emoji.isEmpty ? "🌐" : emoji)
+            if let index = index {
+                SiteStore.shared.replace(at: index, with: newSite)
+            } else {
+                SiteStore.shared.add(newSite)
+            }
+            self.tableView.reloadData()
+        })
+        present(alert, animated: true)
+    }
+
+    private func confirmDelete(at index: Int, completion: @escaping (Bool) -> Void) {
+        guard Sites.all.indices.contains(index) else {
+            completion(false)
+            return
+        }
+        let site = Sites.all[index]
+        let alert = UIAlertController(title: "删除「\(site.name)」？",
+                                      message: "删除后还可以重新添加。",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completion(false) })
+        alert.addAction(UIAlertAction(title: "删除", style: .destructive) { [weak self] _ in
+            SiteStore.shared.remove(at: index)
+            self?.tableView.reloadData()
+            completion(true)
+        })
+        present(alert, animated: true)
+    }
+
+    private func presentNotice(_ text: String) {
+        let alert = UIAlertController(title: "提示", message: text, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "好", style: .default))
+        present(alert, animated: true)
+    }
+
+    // MARK: - 表格
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
 
@@ -76,8 +210,42 @@ final class SitesViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        guard indexPath.row < Sites.all.count else { return }
         let site = Sites.all[indexPath.row]
         navigationController?.pushViewController(WebViewController(site: site), animated: true)
+    }
+
+    override func tableView(_ tableView: UITableView,
+                            trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        guard indexPath.row < Sites.all.count else { return nil }
+        let site = Sites.all[indexPath.row]
+        let edit = UIContextualAction(style: .normal, title: "编辑") { [weak self] _, _, completion in
+            self?.presentEditor(for: site, at: indexPath.row)
+            completion(true)
+        }
+        edit.backgroundColor = Theme.accent
+        let delete = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, completion in
+            self?.confirmDelete(at: indexPath.row, completion: completion)
+        }
+        return UISwipeActionsConfiguration(actions: [delete, edit])
+    }
+
+    override func tableView(_ tableView: UITableView,
+                            commit editingStyle: UITableViewCell.EditingStyle,
+                            forRowAt indexPath: IndexPath) {
+        guard editingStyle == .delete, indexPath.row < Sites.all.count else { return }
+        SiteStore.shared.remove(at: indexPath.row)
+        tableView.deleteRows(at: [indexPath], with: .automatic)
+    }
+
+    override func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+
+    override func tableView(_ tableView: UITableView,
+                            moveRowAt sourceIndexPath: IndexPath,
+                            to destinationIndexPath: IndexPath) {
+        SiteStore.shared.move(from: sourceIndexPath.row, to: destinationIndexPath.row)
     }
 
     private static func displayURL(_ url: String) -> String {
