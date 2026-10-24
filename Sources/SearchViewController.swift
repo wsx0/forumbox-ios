@@ -271,4 +271,22 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
                 animated: true)
         }
     }
+
+    override func tableView(_ tableView: UITableView,
+                            trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        guard indexPath.section < sections.count else { return nil }
+        let result = sections[indexPath.section]
+        guard !result.items.isEmpty, indexPath.row < result.items.count else { return nil }
+        let item = result.items[indexPath.row]
+        let favorite = UIContextualAction(style: .normal, title: "收藏") { _, _, completion in
+            FavoriteStore.shared.add(title: item.title,
+                                     url: item.url,
+                                     siteName: result.site.name,
+                                     siteEmoji: result.site.emoji,
+                                     folderId: nil)
+            completion(true)
+        }
+        favorite.backgroundColor = Theme.accent
+        return UISwipeActionsConfiguration(actions: [favorite])
+    }
 }
