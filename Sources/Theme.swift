@@ -174,7 +174,7 @@ enum Theme {
         return container
     }
 
-    /// 应用导航栏 / 全局色调
+    /// 应用导航栏 / 底部 Tab / 全局色调
     static func applyAppearance() {
         let palette = ThemeManager.shared.palette
         let appearance = UINavigationBarAppearance()
@@ -187,6 +187,24 @@ enum Theme {
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().tintColor = palette.accent
+
+        let itemAppearance = UITabBarItemAppearance()
+        itemAppearance.normal.iconColor = palette.textFaint
+        itemAppearance.normal.titleTextAttributes = [.foregroundColor: palette.textFaint,
+                                                     .font: rounded(10, .medium)]
+        itemAppearance.selected.iconColor = palette.accent
+        itemAppearance.selected.titleTextAttributes = [.foregroundColor: palette.accent,
+                                                       .font: rounded(10, .semibold)]
+        let tabAppearance = UITabBarAppearance()
+        tabAppearance.configureWithOpaqueBackground()
+        tabAppearance.backgroundColor = palette.navBg
+        tabAppearance.shadowColor = palette.cardBorder
+        tabAppearance.stackedLayoutAppearance = itemAppearance
+        tabAppearance.inlineLayoutAppearance = itemAppearance
+        tabAppearance.compactInlineLayoutAppearance = itemAppearance
+        UITabBar.appearance().standardAppearance = tabAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabAppearance
+
         UISearchBar.appearance().tintColor = palette.accent
     }
 }
