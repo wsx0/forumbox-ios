@@ -56,29 +56,58 @@ enum WebScripts {
             var anchors = document.querySelectorAll('a[href]');
             var threadPattern = /(thread-|viewthread|viewtopic|read\\.php\\?tid=|forum\\.php\\?mod=viewthread|\\/thread\\/|\\/topic\\/)/i;
 
+            function absoluteURL(raw) {
+                if (!raw) return '';
+                raw = ('' + raw).trim();
+                if (!raw || raw.indexOf('data:') === 0) return '';
+                try { return new URL(raw, location.href).href; } catch (e) { return ''; }
+            }
+
+            function isBadImage(src, cls) {
+                return /avatar|head|icon|emoji|smiley|badge/i.test(src + ' ' + cls);
+            }
+
             function findThumb(anchor) {
                 var node = anchor;
-                for (var depth = 0; depth < 5 && node; depth++) {
-                    node = node.parentElement;
-                    if (!node) break;
-                    var imgs = node.querySelectorAll('img');
+                for (var depth = 0; depth < 6 && node; depth++) {
+                    var imgs = node.querySelectorAll ? node.querySelectorAll('img') : [];
                     for (var i = 0; i < imgs.length; i++) {
                         var img = imgs[i];
-                        var src = img.currentSrc || img.src ||
-                                  img.getAttribute('data-src') || img.getAttribute('data-original') || '';
-                        if (!src) continue;
-                        if (src.indexOf('data:') === 0) continue;
-                        try { src = new URL(src, location.href).href; } catch (e) {}
-                        if (src.indexOf('http') !== 0) continue;
-                        var cls = (img.className || '') + ' ' + (img.id || '');
-                        if (/avatar|head|icon|emoji|smiley|badge/i.test(src + ' ' + cls)) continue;
-                        var w = parseInt(img.getAttribute('width') || '0', 10) || img.naturalWidth || 0;
-                        var h = parseInt(img.getAttribute('height') || '0', 10) || img.naturalHeight || 0;
-                        if (w > 0 && w < 40) continue;
-                        if (h > 0 && h < 30) continue;
-                        return src;
+                        var attrs = [img.getAttribute('data-original'),
+                                     img.getAttribute('data-src'),
+                                     img.getAttribute('data-lazy'),
+                                     img.getAttribute('data-echo'),
+                                     img.getAttribute('src'),
+                                     img.currentSrc];
+                        for (var k = 0; k < attrs.length; k++) {
+                            var src = absoluteURL(attrs[k]);
+                            if (!src) continue;
+                            var cls = (img.className || '') + ' ' + (img.id || '');
+                            if (isBadImage(src, cls)) continue;
+                            var w = parseInt(img.getAttribute('width') || '0', 10) || img.naturalWidth || 0;
+                            var h = parseInt(img.getAttribute('height') || '0', 10) || img.naturalHeight || 0;
+                            if (w > 0 && w < 40) continue;
+                            if (h > 0 && h < 30) continue;
+                            return src;
+                        }
                     }
+
+                    var all = node.querySelectorAll ? node.querySelectorAll('*') : [];
+                    for (var j = 0; j < all.length; j++) {
+                        var el = all[j];
+                        var style = el.getAttribute ? (el.getAttribute('style') || '') : '';
+                        var at = style.indexOf('url(');
+                        if (at < 0) continue;
+                        var rest = style.substring(at + 4);
+                        var end = rest.indexOf(')');
+                        if (end < 0) continue;
+                        var raw = rest.substring(0, end).split('"').join('').split("'").join('').trim();
+                        var bg = absoluteURL(raw);
+                        if (bg && !isBadImage(bg, '')) return bg;
+                    }
+
                     if (node.tagName === 'LI' || node.tagName === 'TR') break;
+                    node = node.parentElement;
                 }
                 return '';
             }

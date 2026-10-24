@@ -6,16 +6,26 @@ class ThreadGridViewController: UIViewController, UICollectionViewDataSource, UI
     let collectionView: UICollectionView
     let chipsView = FilterChipsView()
     let summaryLabel = UILabel()
+    let detailLabel = UILabel()
     let statusView = FeedStatusView()
 
     private let headerContainer = UIView()
     private var headerHeightConstraint: NSLayoutConstraint!
+    private var headerVisible = true
 
     private(set) var entries: [FeedEntry] = []
     private(set) var chipsSites: [Site] = []
     private(set) var filterSiteName: String?
     private(set) var isFetching = false
-    var extraSummary: String?
+
+    /// 失败站点等补充说明（显示在摘要第二行）
+    var extraSummary: String? {
+        didSet {
+            detailLabel.text = extraSummary
+            applyHeaderHeight()
+            refreshSummary()
+        }
+    }
 
     var onSelect: ((FeedEntry) -> Void)?
     var onRefresh: (() -> Void)?
@@ -37,11 +47,11 @@ class ThreadGridViewController: UIViewController, UICollectionViewDataSource, UI
 
     static func makeLayout() -> UICollectionViewCompositionalLayout {
         let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.5),
-                                              heightDimension: .absolute(198))
+                                              heightDimension: .absolute(196))
         let item = NSCollectionLayoutItem(layoutSize: itemSize)
         item.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 6, bottom: 5, trailing: 6)
         let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
-                                               heightDimension: .absolute(198))
+                                               heightDimension: .absolute(196))
         let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitem: item, count: 2)
         let section = NSCollectionLayoutSection(group: group)
         section.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 10, bottom: 24, trailing: 10)
@@ -74,11 +84,17 @@ class ThreadGridViewController: UIViewController, UICollectionViewDataSource, UI
         summaryLabel.translatesAutoresizingMaskIntoConstraints = false
         headerContainer.addSubview(summaryLabel)
 
+        detailLabel.font = .systemFont(ofSize: 10.5, weight: .regular)
+        detailLabel.textColor = Theme.textFaint
+        detailLabel.lineBreakMode = .byTruncatingTail
+        detailLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerContainer.addSubview(detailLabel)
+
         statusView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusView)
         statusView.isHidden = true
 
-        headerHeightConstraint = headerContainer.heightAnchor.constraint(equalToConstant: 62)
+        headerHeightConstraint = headerContainer.heightAnchor.constraint(equalToConstant: 76)
         NSLayoutConstraint.activate([
             headerContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             headerContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -90,10 +106,15 @@ class ThreadGridViewController: UIViewController, UICollectionViewDataSource, UI
             chipsView.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor),
             chipsView.heightAnchor.constraint(equalToConstant: Design.chipHeight),
 
-            summaryLabel.topAnchor.constraint(equalTo: chipsView.bottomAnchor, constant: 8),
+            summaryLabel.topAnchor.constraint(equalTo: chipsView.bottomAnchor, constant: 7),
             summaryLabel.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor, constant: Design.hPad),
             summaryLabel.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor, constant: -Design.hPad),
-            summaryLabel.heightAnchor.constraint(equalToConstant: 16),
+            summaryLabel.heightAnchor.constraint(equalToConstant: 15),
+
+            detailLabel.topAnchor.constraint(equalTo: summaryLabel.bottomAnchor, constant: 2),
+            detailLabel.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor, constant: Design.hPad),
+            detailLabel.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor, constant: -Design.hPad),
+            detailLabel.heightAnchor.constraint(equalToConstant: 13),
 
             collectionView.topAnchor.constraint(equalTo: headerContainer.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -145,8 +166,13 @@ class ThreadGridViewController: UIViewController, UICollectionViewDataSource, UI
     }
 
     func setHeaderVisible(_ visible: Bool) {
+        headerVisible = visible
         headerContainer.isHidden = !visible
-        headerHeightConstraint.constant = visible ? 62 : 0
+        applyHeaderHeight()
+    }
+
+    private func applyHeaderHeight() {
+        headerHeightConstraint.constant = headerVisible ? 76 : 0
         view.setNeedsLayout()
     }
 
@@ -187,14 +213,14 @@ class ThreadGridViewController: UIViewController, UICollectionViewDataSource, UI
         let visible = filteredEntries.count
         guard visible > 0 else {
             summaryLabel.text = isFetching ? "正在加载…" : ""
+            detailLabel.text = isFetching ? nil : extraSummary
+            applyHeaderHeight()
             return
         }
         let siteCount = Set(entries.map { $0.site.name }).count
-        var text = "共 \(visible) 条 · 来自 \(siteCount) 个论坛"
-        if let extra = extraSummary, !extra.isEmpty {
-            text += " · \(extra)"
-        }
-        summaryLabel.text = text
+        summaryLabel.text = "共 \(visible) 条 · 来自 \(siteCount) 个论坛"
+        detailLabel.text = extraSummary
+        applyHeaderHeight()
     }
 
     func showStatus(_ text: String, spinning: Bool) {

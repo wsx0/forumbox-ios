@@ -20,6 +20,7 @@ final class SearchViewController: ThreadGridViewController, UISearchBarDelegate 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "搜索"
+        ImageLoader.shared.refreshCookies(force: true)
         setupSearchController()
         navigationItem.searchController = searchController
         navigationItem.hidesSearchBarWhenScrolling = false
@@ -125,11 +126,16 @@ final class SearchViewController: ThreadGridViewController, UISearchBarDelegate 
                             guard let self = self else { return }
                             self.setFetching(false)
                             self.endRefreshing()
+                            ImageLoader.shared.refreshCookies(force: true)
                             self.rebuildAndShow()
                             if self.entries.isEmpty {
                                 self.showStatus("没有搜到结果，换个关键词试试", spinning: false)
                             } else {
                                 self.hideStatus()
+                                // cookie 同步完成后重试一次缩略图
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                                    self?.collectionView.reloadData()
+                                }
                             }
                          })
     }

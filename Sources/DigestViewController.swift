@@ -20,6 +20,7 @@ final class DigestViewController: ThreadGridViewController {
         super.viewDidLoad()
         title = "精华"
         navigationItem.leftBarButtonItem = themeButton
+        ImageLoader.shared.refreshCookies(force: true)
 
         onSelect = { [weak self] entry in
             self?.navigationController?.pushViewController(
@@ -80,10 +81,15 @@ final class DigestViewController: ThreadGridViewController {
                             guard let self = self else { return }
                             self.setFetching(false)
                             self.endRefreshing()
+                            ImageLoader.shared.refreshCookies(force: true)
                             if self.entries.isEmpty {
                                 self.showStatus("暂时没抓到精华，下拉刷新试试", spinning: false)
                             } else {
                                 self.hideStatus()
+                                // cookie 同步完成后重试一次缩略图
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                                    self?.collectionView.reloadData()
+                                }
                             }
                          })
     }

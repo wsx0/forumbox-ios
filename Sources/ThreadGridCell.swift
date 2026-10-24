@@ -1,13 +1,15 @@
 import UIKit
 
-/// 网格卡片（精华 / 搜索共用）：大缩略图 + 标题 + 站点
+/// 网格卡片（精华 / 搜索共用）：缩略图 + 标题 + 站点
 final class ThreadGridCell: UICollectionViewCell {
 
     static let reuseID = "ThreadGridCell"
 
     private let imageContainer = UIView()
+    private let placeholderGradient = CAGradientLayer()
     private let imageView = UIImageView()
     private let emojiLabel = UILabel()
+    private let noCoverLabel = UILabel()
     private let titleLabel = UILabel()
     private let siteLabel = UILabel()
 
@@ -26,15 +28,28 @@ final class ThreadGridCell: UICollectionViewCell {
         imageContainer.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(imageContainer)
 
+        placeholderGradient.colors = [Theme.accentSoft.withAlphaComponent(0.30).cgColor,
+                                      Theme.accent.withAlphaComponent(0.14).cgColor]
+        placeholderGradient.startPoint = CGPoint(x: 0, y: 0)
+        placeholderGradient.endPoint = CGPoint(x: 1, y: 1)
+        imageContainer.layer.insertSublayer(placeholderGradient, at: 0)
+
+        emojiLabel.font = .systemFont(ofSize: 38)
+        emojiLabel.textAlignment = .center
+        emojiLabel.translatesAutoresizingMaskIntoConstraints = false
+        imageContainer.addSubview(emojiLabel)
+
+        noCoverLabel.text = "暂无封面"
+        noCoverLabel.font = .systemFont(ofSize: 9.5, weight: .medium)
+        noCoverLabel.textColor = Theme.textFaint
+        noCoverLabel.textAlignment = .center
+        noCoverLabel.translatesAutoresizingMaskIntoConstraints = false
+        imageContainer.addSubview(noCoverLabel)
+
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageContainer.addSubview(imageView)
-
-        emojiLabel.font = .systemFont(ofSize: 34)
-        emojiLabel.textAlignment = .center
-        emojiLabel.translatesAutoresizingMaskIntoConstraints = false
-        imageContainer.addSubview(emojiLabel)
 
         titleLabel.font = Theme.rounded(14, .semibold)
         titleLabel.textColor = Theme.text
@@ -51,29 +66,37 @@ final class ThreadGridCell: UICollectionViewCell {
             imageContainer.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             imageContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            imageContainer.heightAnchor.constraint(equalToConstant: 118),
+            imageContainer.heightAnchor.constraint(equalToConstant: 108),
+
+            emojiLabel.centerXAnchor.constraint(equalTo: imageContainer.centerXAnchor),
+            emojiLabel.centerYAnchor.constraint(equalTo: imageContainer.centerYAnchor, constant: -8),
+
+            noCoverLabel.centerXAnchor.constraint(equalTo: imageContainer.centerXAnchor),
+            noCoverLabel.topAnchor.constraint(equalTo: emojiLabel.bottomAnchor, constant: 2),
 
             imageView.topAnchor.constraint(equalTo: imageContainer.topAnchor),
             imageView.bottomAnchor.constraint(equalTo: imageContainer.bottomAnchor),
             imageView.leadingAnchor.constraint(equalTo: imageContainer.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: imageContainer.trailingAnchor),
 
-            emojiLabel.centerXAnchor.constraint(equalTo: imageContainer.centerXAnchor),
-            emojiLabel.centerYAnchor.constraint(equalTo: imageContainer.centerYAnchor),
-
             titleLabel.topAnchor.constraint(equalTo: imageContainer.bottomAnchor, constant: 8),
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
             titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
 
-            siteLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
             siteLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
             siteLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -10),
-            siteLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -9)
+            siteLabel.topAnchor.constraint(greaterThanOrEqualTo: titleLabel.bottomAnchor, constant: 4),
+            siteLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8)
         ])
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        placeholderGradient.frame = imageContainer.bounds
     }
 
     func configure(entry: FeedEntry) {
@@ -88,22 +111,28 @@ final class ThreadGridCell: UICollectionViewCell {
         imageTask = nil
 
         if let thumbURL = entry.item.thumbURL, !thumbURL.isEmpty {
-            imageView.isHidden = false
-            emojiLabel.isHidden = true
-            imageView.image = nil
+            showPlaceholder(false)
             imageTask = ImageLoader.shared.load(thumbURL, referer: entry.site.url) { [weak self] image in
                 guard let self = self, self.loadToken == token else { return }
                 if let image = image {
                     self.imageView.image = image
+                    self.imageView.isHidden = false
                 } else {
-                    self.imageView.isHidden = true
-                    self.emojiLabel.isHidden = false
+                    self.showPlaceholder(true)
                 }
             }
         } else {
-            imageView.isHidden = true
-            emojiLabel.isHidden = false
+            showPlaceholder(true)
         }
+    }
+
+    private func showPlaceholder(_ show: Bool) {
+        if show {
+            imageView.image = nil
+            imageView.isHidden = true
+        }
+        emojiLabel.isHidden = !show
+        noCoverLabel.isHidden = !show
     }
 
     override func prepareForReuse() {
@@ -114,6 +143,7 @@ final class ThreadGridCell: UICollectionViewCell {
         imageView.image = nil
         imageView.isHidden = true
         emojiLabel.isHidden = false
+        noCoverLabel.isHidden = false
         contentView.transform = .identity
     }
 
