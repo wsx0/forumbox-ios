@@ -2,22 +2,25 @@ import UIKit
 
 final class SitesViewController: UITableViewController {
 
-    private let bgColor = UIColor(red: 11/255, green: 18/255, blue: 32/255, alpha: 1)
-
     private lazy var searchButton: UIButton = {
         let button = UIButton(type: .system)
         var config = UIButton.Configuration.plain()
         config.title = "搜索 7 个论坛"
-        config.image = UIImage(systemName: "magnifyingglass")
+        config.image = UIImage(systemName: "sparkles")
         config.imagePadding = 8
-        config.baseForegroundColor = UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1)
+        config.baseForegroundColor = Theme.textDim
         config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var out = incoming
+            out.font = Theme.rounded(14.5, .semibold)
+            return out
+        }
         button.configuration = config
         button.contentHorizontalAlignment = .leading
-        button.backgroundColor = UIColor(red: 18/255, green: 30/255, blue: 53/255, alpha: 1)
-        button.layer.cornerRadius = 12
+        button.backgroundColor = Theme.card
+        button.layer.cornerRadius = 14
         button.layer.borderWidth = 1
-        button.layer.borderColor = UIColor(red: 30/255, green: 47/255, blue: 76/255, alpha: 1).cgColor
+        button.layer.borderColor = Theme.cardBorder.cgColor
         button.addTarget(self, action: #selector(openSearch), for: .touchUpInside)
         return button
     }()
@@ -25,21 +28,29 @@ final class SitesViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "论坛盒子"
-        view.backgroundColor = bgColor
-        tableView.backgroundColor = bgColor
+        view.backgroundColor = Theme.bgTop
+        tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
-        tableView.rowHeight = 80
-        tableView.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 24, right: 0)
+        tableView.rowHeight = 82
+        tableView.contentInset = UIEdgeInsets(top: 6, left: 0, bottom: 24, right: 0)
         tableView.register(SiteCell.self, forCellReuseIdentifier: "SiteCell")
         navigationItem.backButtonDisplayMode = .minimal
         navigationController?.navigationBar.prefersLargeTitles = false
+        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
         setupSearchHeader()
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let background = tableView.backgroundView {
+            background.frame = tableView.bounds
+        }
+    }
+
     private func setupSearchHeader() {
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 64))
-        header.backgroundColor = bgColor
-        searchButton.frame = CGRect(x: 16, y: 8, width: header.bounds.width - 32, height: 46)
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 66))
+        header.backgroundColor = .clear
+        searchButton.frame = CGRect(x: 16, y: 10, width: header.bounds.width - 32, height: 46)
         searchButton.autoresizingMask = [.flexibleWidth]
         header.addSubview(searchButton)
         tableView.tableHeaderView = header
@@ -64,14 +75,15 @@ final class SitesViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let site = Sites.all[indexPath.row]
-        let vc = WebViewController(site: site)
-        navigationController?.pushViewController(vc, animated: true)
+        navigationController?.pushViewController(WebViewController(site: site), animated: true)
     }
 }
 
 final class SiteCell: UITableViewCell {
 
     private let container = UIView()
+    private let emojiBackground = UIView()
+    private let emojiLabel = UILabel()
     private let nameLabel = UILabel()
     private let noteLabel = UILabel()
     private let urlLabel = UILabel()
@@ -81,26 +93,37 @@ final class SiteCell: UITableViewCell {
         backgroundColor = .clear
         selectionStyle = .none
 
-        container.backgroundColor = UIColor(red: 18/255, green: 30/255, blue: 53/255, alpha: 1)
-        container.layer.cornerRadius = 14
+        container.backgroundColor = Theme.card
+        container.layer.cornerRadius = 16
         container.layer.borderWidth = 1
-        container.layer.borderColor = UIColor(red: 30/255, green: 47/255, blue: 76/255, alpha: 1).cgColor
+        container.layer.borderColor = Theme.cardBorder.cgColor
         container.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(container)
 
-        nameLabel.font = .systemFont(ofSize: 17, weight: .semibold)
-        nameLabel.textColor = .white
+        emojiBackground.backgroundColor = Theme.emojiBg
+        emojiBackground.layer.cornerRadius = 11
+        emojiBackground.layer.borderWidth = 1
+        emojiBackground.layer.borderColor = Theme.cardBorder.cgColor
+        emojiBackground.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(emojiBackground)
+
+        emojiLabel.font = .systemFont(ofSize: 21)
+        emojiLabel.textAlignment = .center
+        emojiLabel.translatesAutoresizingMaskIntoConstraints = false
+        emojiBackground.addSubview(emojiLabel)
+
+        nameLabel.font = Theme.rounded(16.5)
+        nameLabel.textColor = Theme.text
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        noteLabel.font = .systemFont(ofSize: 11, weight: .regular)
-        noteLabel.textColor = UIColor(red: 125/255, green: 211/255, blue: 252/255, alpha: 1)
+        noteLabel.font = .systemFont(ofSize: 10.5, weight: .medium)
+        noteLabel.textColor = Theme.accent
         noteLabel.translatesAutoresizingMaskIntoConstraints = false
-        noteLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         noteLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        urlLabel.font = .systemFont(ofSize: 11, weight: .regular)
-        urlLabel.textColor = UIColor(red: 100/255, green: 116/255, blue: 139/255, alpha: 1)
+        urlLabel.font = .systemFont(ofSize: 10.5, weight: .regular)
+        urlLabel.textColor = Theme.textFaint
         urlLabel.translatesAutoresizingMaskIntoConstraints = false
         urlLabel.lineBreakMode = .byTruncatingMiddle
 
@@ -114,16 +137,24 @@ final class SiteCell: UITableViewCell {
             container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
             container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
 
-            nameLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            nameLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 14),
+            emojiBackground.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 13),
+            emojiBackground.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            emojiBackground.widthAnchor.constraint(equalToConstant: 40),
+            emojiBackground.heightAnchor.constraint(equalToConstant: 40),
 
-            noteLabel.leadingAnchor.constraint(equalTo: nameLabel.trailingAnchor, constant: 10),
+            emojiLabel.centerXAnchor.constraint(equalTo: emojiBackground.centerXAnchor),
+            emojiLabel.centerYAnchor.constraint(equalTo: emojiBackground.centerYAnchor),
+
+            nameLabel.leadingAnchor.constraint(equalTo: emojiBackground.trailingAnchor, constant: 12),
+            nameLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 13),
+
+            noteLabel.leadingAnchor.constraint(equalTo: nameLabel.trailingAnchor, constant: 8),
             noteLabel.centerYAnchor.constraint(equalTo: nameLabel.centerYAnchor),
             noteLabel.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -14),
 
-            urlLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            urlLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             urlLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -14),
-            urlLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 7)
+            urlLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 6)
         ])
     }
 
@@ -132,6 +163,7 @@ final class SiteCell: UITableViewCell {
     }
 
     func configure(with site: Site) {
+        emojiLabel.text = site.emoji
         nameLabel.text = site.name
         noteLabel.text = site.note
         var display = site.url
