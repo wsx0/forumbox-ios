@@ -20,6 +20,10 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
     private var isSearching = false
     private var hasFocusedOnce = false
 
+    deinit {
+        aggregator.cancel()
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "聚合搜索"
@@ -29,8 +33,8 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         tableView.rowHeight = 78
         tableView.contentInset = UIEdgeInsets(top: 4, left: 0, bottom: 24, right: 0)
         tableView.keyboardDismissMode = .onDrag
-        tableView.register(SearchResultCell.self, forCellReuseIdentifier: "SearchResultCell")
-        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
+        tableView.register(CardCell.self, forCellReuseIdentifier: "CardCell")
+        navigationItem.backButtonDisplayMode = .minimal
 
         let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 64))
         header.backgroundColor = .clear
@@ -40,7 +44,7 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         searchBar.barStyle = .black
         searchBar.placeholder = "输入关键词，合并搜索所有论坛"
         searchBar.delegate = self
-        searchBar.searchTextField.textColor = .white
+        searchBar.searchTextField.textColor = Theme.text
         searchBar.searchTextField.backgroundColor = Theme.card
         searchBar.searchTextField.layer.cornerRadius = 12
         searchBar.searchTextField.clipsToBounds = true
@@ -52,23 +56,26 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         header.addSubview(searchBar)
         tableView.tableHeaderView = header
 
-        spinner.color = Theme.accent
+        let background = Theme.makeBackgroundView(tableView.bounds)
+        tableView.backgroundView = background
 
         hintLabel.text = "输入关键词后点「搜索」，\nApp 会在各论坛同时搜索，再把结果合并到一个列表。"
         hintLabel.numberOfLines = 0
         hintLabel.textAlignment = .center
         hintLabel.textColor = Theme.textFaint
         hintLabel.font = Theme.rounded(14, .medium)
-        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
-        tableView.backgroundView?.addSubview(hintLabel)
-        hintLabel.frame = tableView.bounds
+        hintLabel.frame = background.bounds
         hintLabel.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        background.addSubview(hintLabel)
+
+        spinner.color = Theme.accent
+        updateHintVisibility()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        tableView.backgroundView?.frame = tableView.bounds
         if let background = tableView.backgroundView {
-            background.frame = tableView.bounds
             hintLabel.frame = background.bounds
         }
     }
@@ -81,8 +88,13 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         }
     }
 
-    deinit {
-        aggregator.cancel()
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if isMovingFromParent {
+            aggregator.cancel()
+            isSearching = false
+            updateSpinner()
+        }
     }
 
     // MARK: - 搜索
@@ -95,13 +107,12 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             query = ""
-            isSearching = false
             sections.removeAll()
             manualRows.removeAll()
             aggregator.cancel()
-            tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
-            tableView.backgroundView?.addSubview(hintLabel)
+            isSearching = false
             updateSpinner()
+            updateHintVisibility()
             tableView.reloadData()
         }
     }
@@ -111,7 +122,7 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         guard !text.isEmpty else { return }
         query = text
         isSearching = true
-        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
+        updateHintVisibility()
         sections = Sites.all.filter { $0.searchURL != nil }.map {
             SearchAggregator.SiteResult(site: $0, status: "搜索中…", items: [])
         }
@@ -121,12 +132,9 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
 
         aggregator.search(query: query, sites: Sites.all, update: { [weak self] result in
             guard let self = self else { return }
-            if let index = self.sections.firstIndex(where: { $0.site.name == result.site.name }) {
-                self.sections[index] = result
-            } else {
-                self.sections.append(result)
-            }
-            self.tableView.reloadData()
+            guard let index = self.sections.firstIndex(where: { $0.site.name == result.site.name }) else { return }
+            self.sections[index] = result
+            self.tableView.reloadSections(IndexSet(integer: index), with: .none)
         }, finished: { [weak self] in
             guard let self = self else { return }
             self.isSearching = false
@@ -143,6 +151,10 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
             spinner.stopAnimating()
             navigationItem.rightBarButtonItem = nil
         }
+    }
+
+    private func updateHintVisibility() {
+        hintLabel.isHidden = !query.isEmpty
     }
 
     private func buildManualRows() -> [ManualRow] {
@@ -216,20 +228,31 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "SearchResultCell", for: indexPath) as! SearchResultCell
         if indexPath.section < sections.count {
             let result = sections[indexPath.section]
             if result.items.isEmpty {
-                cell.configure(title: result.status, subtitle: "可手动打开该站搜索，或稍后重试")
-            } else {
-                let item = result.items[indexPath.row]
-                cell.configure(title: item.title, subtitle: result.site.name)
+                return tableView.dequeueCard(for: indexPath, model: CardCell.Model(
+                    emoji: "⏳",
+                    title: result.status,
+                    subtitle: "可手动打开该站搜索，或稍后重试",
+                    detail: nil,
+                    showsChevron: false))
             }
-        } else {
-            let row = manualRows[indexPath.row]
-            cell.configure(title: row.title, subtitle: row.subtitle)
+            let item = result.items[indexPath.row]
+            return tableView.dequeueCard(for: indexPath, model: CardCell.Model(
+                emoji: result.site.emoji,
+                title: item.title,
+                subtitle: result.site.name,
+                detail: nil,
+                showsChevron: true))
         }
-        return cell
+        let row = manualRows[indexPath.row]
+        return tableView.dequeueCard(for: indexPath, model: CardCell.Model(
+            emoji: row.site.emoji,
+            title: row.title,
+            subtitle: row.subtitle,
+            detail: nil,
+            showsChevron: true))
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -238,69 +261,14 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
             let result = sections[indexPath.section]
             guard !result.items.isEmpty else { return }
             let item = result.items[indexPath.row]
-            let targetSite = Site(name: result.site.name, note: "", url: item.url, searchURL: nil, emoji: result.site.emoji)
-            navigationController?.pushViewController(WebViewController(site: targetSite), animated: true)
+            navigationController?.pushViewController(
+                WebViewController(title: result.site.name, urlString: item.url),
+                animated: true)
         } else {
             let row = manualRows[indexPath.row]
-            let controller = WebViewController(site: row.site, searchQuery: row.searchQuery)
-            navigationController?.pushViewController(controller, animated: true)
+            navigationController?.pushViewController(
+                WebViewController(site: row.site, searchQuery: row.searchQuery),
+                animated: true)
         }
-    }
-}
-
-final class SearchResultCell: UITableViewCell {
-
-    private let container = UIView()
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
-
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-        backgroundColor = .clear
-        selectionStyle = .none
-
-        container.backgroundColor = Theme.card
-        container.layer.cornerRadius = 14
-        container.layer.borderWidth = 1
-        container.layer.borderColor = Theme.cardBorder.cgColor
-        container.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(container)
-
-        titleLabel.font = Theme.rounded(15.5, .semibold)
-        titleLabel.textColor = Theme.text
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.lineBreakMode = .byTruncatingTail
-
-        subtitleLabel.font = .systemFont(ofSize: 10.5, weight: .medium)
-        subtitleLabel.textColor = Theme.textFaint
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.lineBreakMode = .byTruncatingTail
-
-        container.addSubview(titleLabel)
-        container.addSubview(subtitleLabel)
-
-        NSLayoutConstraint.activate([
-            container.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            container.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
-            container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
-
-            titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 15),
-
-            subtitleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            subtitleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 7)
-        ])
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func configure(title: String, subtitle: String) {
-        titleLabel.text = title
-        subtitleLabel.text = subtitle
     }
 }
