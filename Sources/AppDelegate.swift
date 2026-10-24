@@ -9,6 +9,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         Theme.applyAppearance()
 
         let window = UIWindow(frame: UIScreen.main.bounds)
+        window.tintColor = Theme.accent
         let root = SitesViewController(style: .plain)
         let nav = UINavigationController(rootViewController: root)
         window.rootViewController = nav
