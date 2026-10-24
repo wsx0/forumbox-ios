@@ -1,7 +1,14 @@
 import UIKit
 
-/// 主题选择器（精华页 / 论坛页 共用）
+/// 主题选择器（精华页 / 论坛页 / 收藏页 共用）
 enum ThemePicker {
+
+    static func makeButton(target: Any, action: Selector) -> UIBarButtonItem {
+        return UIBarButtonItem(image: UIImage(systemName: "paintpalette"),
+                               style: .plain,
+                               target: target,
+                               action: action)
+    }
 
     static func present(from viewController: UIViewController, sourceItem: UIBarButtonItem) {
         let sheet = UIAlertController(title: "选择主题", message: nil, preferredStyle: .actionSheet)

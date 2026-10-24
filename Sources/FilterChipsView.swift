@@ -11,6 +11,7 @@ final class FilterChipsView: UIView {
     private let stack = UIStackView()
     private var buttons: [UIButton] = []
     private var items: [Item] = []
+    private var lastTitles: [String] = []
     private(set) var selectedIndex = 0
     var onSelect: ((Int) -> Void)?
 
@@ -46,8 +47,17 @@ final class FilterChipsView: UIView {
     }
 
     func configure(items: [Item], selected: Int) {
+        let titles = items.map { $0.title }
         self.items = items
         selectedIndex = min(max(selected, 0), max(items.count - 1, 0))
+
+        // 标题没变时只更新选中状态，避免反复重建按钮
+        if titles == lastTitles {
+            updateStyles()
+            return
+        }
+        lastTitles = titles
+
         buttons.forEach { $0.removeFromSuperview() }
         buttons.removeAll()
 

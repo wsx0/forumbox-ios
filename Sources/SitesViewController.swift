@@ -26,10 +26,7 @@ final class SitesViewController: UITableViewController {
         return button
     }()
 
-    private lazy var themeButton = UIBarButtonItem(image: UIImage(systemName: "paintpalette"),
-                                                   style: .plain,
-                                                   target: self,
-                                                   action: #selector(showThemePicker))
+    private lazy var themeButton = ThemePicker.makeButton(target: self, action: #selector(showThemePicker))
 
     private lazy var addButton = UIBarButtonItem(barButtonSystemItem: .add,
                                                  target: self,
@@ -158,12 +155,6 @@ final class SitesViewController: UITableViewController {
         present(alert, animated: true)
     }
 
-    private func presentNotice(_ text: String) {
-        let alert = UIAlertController(title: "提示", message: text, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "好", style: .default))
-        present(alert, animated: true)
-    }
-
     // MARK: - 表格
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
@@ -178,7 +169,7 @@ final class SitesViewController: UITableViewController {
             emoji: site.emoji,
             title: site.name,
             subtitle: site.note,
-            detail: Self.displayURL(site.url),
+            detail: site.url.shortURL,
             showsChevron: true))
     }
 
@@ -221,12 +212,5 @@ final class SitesViewController: UITableViewController {
                             moveRowAt sourceIndexPath: IndexPath,
                             to destinationIndexPath: IndexPath) {
         SiteStore.shared.move(from: sourceIndexPath.row, to: destinationIndexPath.row)
-    }
-
-    private static func displayURL(_ url: String) -> String {
-        var text = url
-        if text.hasPrefix("https://") { text = String(text.dropFirst(8)) }
-        if text.hasPrefix("http://") { text = String(text.dropFirst(7)) }
-        return text
     }
 }

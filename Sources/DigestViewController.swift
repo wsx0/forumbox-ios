@@ -5,13 +5,14 @@ final class DigestViewController: ThreadGridViewController {
 
     private let aggregator = SiteFetchAggregator()
     private var results: [SiteThreadResult] = []
+    private var sitesObserver: NSObjectProtocol?
 
-    private lazy var themeButton = UIBarButtonItem(image: UIImage(systemName: "paintpalette"),
-                                                   style: .plain,
-                                                   target: self,
-                                                   action: #selector(showThemePicker))
+    private lazy var themeButton = ThemePicker.makeButton(target: self, action: #selector(showThemePicker))
 
     deinit {
+        if let observer = sitesObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
         aggregator.cancel()
     }
 
@@ -28,6 +29,14 @@ final class DigestViewController: ThreadGridViewController {
         onRefresh = { [weak self] in
             self?.loadDigest()
         }
+
+        // 站点增删改后自动刷新
+        sitesObserver = NotificationCenter.default.addObserver(forName: .sitesChanged,
+                                                               object: nil,
+                                                               queue: .main) { [weak self] _ in
+            self?.loadDigest()
+        }
+
         loadDigest()
     }
 
@@ -36,6 +45,7 @@ final class DigestViewController: ThreadGridViewController {
     }
 
     private func loadDigest() {
+        guard !isFetching else { return }
         let digestSites = Sites.all.filter { $0.digestURL != nil }
         guard !digestSites.isEmpty else {
             results = []
@@ -62,9 +72,9 @@ final class DigestViewController: ThreadGridViewController {
                             if let index = self.results.firstIndex(where: { $0.site.name == result.site.name }) {
                                 self.results[index] = result
                             }
-                            self.extraSummary = Self.failedSummary(self.results)
+                            self.extraSummary = FeedPipeline.failedStatusText(self.results)
                             self.setChips(sites: self.results.map { $0.site })
-                            self.setEntries(interleavedEntries(self.results))
+                            self.setEntries(FeedPipeline.entries(from: self.results))
                          },
                          finished: { [weak self] in
                             guard let self = self else { return }
@@ -76,11 +86,5 @@ final class DigestViewController: ThreadGridViewController {
                                 self.hideStatus()
                             }
                          })
-    }
-
-    private static func failedSummary(_ results: [SiteThreadResult]) -> String? {
-        let failed = results.filter { $0.items.isEmpty && $0.status != "抓取中…" }
-        guard !failed.isEmpty else { return nil }
-        return failed.prefix(2).map { "\($0.site.name) \($0.status)" }.joined(separator: "，")
     }
 }

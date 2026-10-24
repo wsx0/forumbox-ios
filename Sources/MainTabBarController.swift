@@ -4,6 +4,13 @@ import UIKit
 final class MainTabBarController: UITabBarController, UITabBarControllerDelegate {
 
     private let lastTabKey = "fb_last_tab"
+    private var favoritesObserver: NSObjectProtocol?
+
+    deinit {
+        if let observer = favoritesObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -41,6 +48,17 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
         tabBar.itemPositioning = .fill
         let saved = UserDefaults.standard.integer(forKey: lastTabKey)
         selectedIndex = min(max(saved, 0), 2)
+        updateFavoriteBadge()
+        favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
+                                                                  object: nil,
+                                                                  queue: .main) { [weak self] _ in
+            self?.updateFavoriteBadge()
+        }
+    }
+
+    private func updateFavoriteBadge() {
+        let count = FavoriteStore.shared.items.count
+        viewControllers?.last?.tabBarItem.badgeValue = count > 0 ? "\(count)" : nil
     }
 
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {

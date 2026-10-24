@@ -16,6 +16,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private let loadingTitle = UILabel()
     private let loadingSpinner = UIActivityIndicatorView(style: .large)
     private var hasHiddenLoading = false
+    private var favoritesObserver: NSObjectProtocol?
 
     private lazy var backButton = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(goBack))
     private lazy var forwardButton = UIBarButtonItem(image: UIImage(systemName: "chevron.right"), style: .plain, target: self, action: #selector(goForward))
@@ -64,6 +65,13 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         observeWebView()
         updateButtons()
 
+        // 收藏在其他页面被修改时，同步星标
+        favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
+                                                                   object: nil,
+                                                                   queue: .main) { [weak self] _ in
+            self?.updateFavoriteButton()
+        }
+
         setupContentRules { [weak self] in
             guard let self = self else { return }
             self.applyUserAgent()
@@ -73,6 +81,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     deinit {
         observations.forEach { $0.invalidate() }
+        if let observer = favoritesObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {

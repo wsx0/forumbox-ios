@@ -3,9 +3,9 @@ import UIKit
 /// 聚合搜索：两列网格结果 + 筛选
 final class SearchViewController: ThreadGridViewController, UISearchBarDelegate {
 
-    private let aggregator = SearchAggregator()
+    private let aggregator = SiteFetchAggregator()
     private let searchController = UISearchController(searchResultsController: nil)
-    private var results: [SearchAggregator.SiteResult] = []
+    private var results: [SiteThreadResult] = []
     private var query = ""
 
     private lazy var moreButton = UIBarButtonItem(image: UIImage(systemName: "ellipsis.circle"),
@@ -96,8 +96,9 @@ final class SearchViewController: ThreadGridViewController, UISearchBarDelegate 
 
     private func startSearch() {
         guard !query.isEmpty else { return }
+        let currentQuery = query
         let searchable = Sites.all.filter { $0.searchURL != nil }
-        results = searchable.map { SearchAggregator.SiteResult(site: $0, status: "搜索中…", items: []) }
+        results = searchable.map { SiteThreadResult(site: $0, status: "搜索中…", items: []) }
         setHeaderVisible(true)
         setChips(sites: searchable)
         extraSummary = nil
@@ -105,36 +106,38 @@ final class SearchViewController: ThreadGridViewController, UISearchBarDelegate 
         setFetching(true)
         showStatus("正在搜索各论坛…", spinning: true)
 
-        aggregator.search(query: query, sites: Sites.all, update: { [weak self] result in
-            guard let self = self else { return }
-            if let index = self.results.firstIndex(where: { $0.site.name == result.site.name }) {
-                self.results[index] = result
-            }
-            self.rebuildAndShow()
-            self.hideStatus()
-        }, finished: { [weak self] in
-            guard let self = self else { return }
-            self.setFetching(false)
-            self.endRefreshing()
-            self.rebuildAndShow()
-            if self.entries.isEmpty {
-                self.showStatus("没有搜到结果，换个关键词试试", spinning: false)
-            } else {
-                self.hideStatus()
-            }
-        })
+        aggregator.start(sites: Sites.all,
+                         needsAutoSearch: true,
+                         urlForSite: { site in
+                            guard let searchURL = site.searchURL, !searchURL.isEmpty else { return nil }
+                            let encoded = currentQuery.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
+                            return searchURL + "#fbq=" + encoded
+                         },
+                         update: { [weak self] result in
+                            guard let self = self else { return }
+                            if let index = self.results.firstIndex(where: { $0.site.name == result.site.name }) {
+                                self.results[index] = result
+                            }
+                            self.rebuildAndShow()
+                            self.hideStatus()
+                         },
+                         finished: { [weak self] in
+                            guard let self = self else { return }
+                            self.setFetching(false)
+                            self.endRefreshing()
+                            self.rebuildAndShow()
+                            if self.entries.isEmpty {
+                                self.showStatus("没有搜到结果，换个关键词试试", spinning: false)
+                            } else {
+                                self.hideStatus()
+                            }
+                         })
     }
 
     private func rebuildAndShow() {
-        let siteResults = results.map {
-            SiteThreadResult(site: $0.site, status: $0.status, items: $0.items)
-        }
-        let failed = siteResults.filter { $0.items.isEmpty && $0.status != "搜索中…" }
-        extraSummary = failed.isEmpty
-            ? nil
-            : failed.prefix(2).map { "\($0.site.name) \($0.status)" }.joined(separator: "，")
+        extraSummary = FeedPipeline.failedStatusText(results, pendingStatus: "搜索中…")
         setChips(sites: results.map { $0.site })
-        setEntries(interleavedEntries(siteResults))
+        setEntries(FeedPipeline.entries(from: results))
     }
 
     @objc private func showMoreMenu() {
@@ -159,11 +162,5 @@ final class SearchViewController: ThreadGridViewController, UISearchBarDelegate 
             pop.barButtonItem = moreButton
         }
         present(sheet, animated: true)
-    }
-
-    private func presentNotice(_ text: String) {
-        let alert = UIAlertController(title: "提示", message: text, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "好", style: .default))
-        present(alert, animated: true)
     }
 }

@@ -135,5 +135,8 @@ final class FavoriteStore {
         if let data = try? JSONEncoder().encode(items) {
             UserDefaults.standard.set(data, forKey: itemsKey)
         }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .favoritesChanged, object: nil)
+        }
     }
 }

@@ -142,5 +142,8 @@ final class SiteStore {
         if let data = try? JSONEncoder().encode(sites) {
             UserDefaults.standard.set(data, forKey: storageKey)
         }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .sitesChanged, object: nil)
+        }
     }
 }

@@ -12,6 +12,7 @@ final class ThreadGridCell: UICollectionViewCell {
     private let siteLabel = UILabel()
 
     private var loadToken = 0
+    private var imageTask: URLSessionDataTask?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -83,11 +84,14 @@ final class ThreadGridCell: UICollectionViewCell {
         siteLabel.text = "\(entry.site.emoji) \(entry.site.name)"
         emojiLabel.text = entry.site.emoji
 
+        imageTask?.cancel()
+        imageTask = nil
+
         if let thumbURL = entry.item.thumbURL, !thumbURL.isEmpty {
             imageView.isHidden = false
             emojiLabel.isHidden = true
             imageView.image = nil
-            ImageLoader.shared.load(thumbURL, referer: entry.site.url) { [weak self] image in
+            imageTask = ImageLoader.shared.load(thumbURL, referer: entry.site.url) { [weak self] image in
                 guard let self = self, self.loadToken == token else { return }
                 if let image = image {
                     self.imageView.image = image
@@ -105,9 +109,12 @@ final class ThreadGridCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         loadToken += 1
+        imageTask?.cancel()
+        imageTask = nil
         imageView.image = nil
         imageView.isHidden = true
         emojiLabel.isHidden = false
+        contentView.transform = .identity
     }
 
     override var isHighlighted: Bool {

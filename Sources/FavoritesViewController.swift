@@ -3,16 +3,20 @@ import UIKit
 /// 收藏 Tab：收藏夹列表 + 最近收藏
 final class FavoritesViewController: UITableViewController {
 
-    private lazy var themeButton = UIBarButtonItem(image: UIImage(systemName: "paintpalette"),
-                                                   style: .plain,
-                                                   target: self,
-                                                   action: #selector(showThemePicker))
+    private lazy var themeButton = ThemePicker.makeButton(target: self, action: #selector(showThemePicker))
 
     private lazy var addFolderButton = UIBarButtonItem(barButtonSystemItem: .add,
                                                        target: self,
                                                        action: #selector(addFolder))
 
     private let emptyHint = UILabel()
+    private var favoritesObserver: NSObjectProtocol?
+
+    deinit {
+        if let observer = favoritesObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -38,13 +42,19 @@ final class FavoritesViewController: UITableViewController {
         emptyHint.frame = background.bounds
         emptyHint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         background.addSubview(emptyHint)
+
+        favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
+                                                                   object: nil,
+                                                                   queue: .main) { [weak self] _ in
+            self?.tableView.reloadData()
+            self?.updateEmptyHint()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tableView.reloadData()
         updateEmptyHint()
-        updateBadge()
     }
 
     override func viewDidLayoutSubviews() {
@@ -57,11 +67,6 @@ final class FavoritesViewController: UITableViewController {
 
     private func updateEmptyHint() {
         emptyHint.isHidden = !FavoriteStore.shared.items.isEmpty
-    }
-
-    private func updateBadge() {
-        let count = FavoriteStore.shared.items.count
-        navigationController?.tabBarItem.badgeValue = count > 0 ? "\(count)" : nil
     }
 
     // MARK: - 动作

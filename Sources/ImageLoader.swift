@@ -1,6 +1,6 @@
 import UIKit
 
-/// 帖子缩略图异步加载（内存缓存 + 带 Referer，避免防盗链）
+/// 帖子缩略图异步加载（内存缓存 + 带 Referer，避免防盗链；支持取消）
 final class ImageLoader {
 
     static let shared = ImageLoader()
@@ -17,18 +17,21 @@ final class ImageLoader {
         cache.countLimit = 300
     }
 
-    func load(_ urlString: String, referer: String?, completion: @escaping (UIImage?) -> Void) {
+    @discardableResult
+    func load(_ urlString: String,
+              referer: String?,
+              completion: @escaping (UIImage?) -> Void) -> URLSessionDataTask? {
         guard !urlString.isEmpty else {
             completion(nil)
-            return
+            return nil
         }
         if let cached = cache.object(forKey: urlString as NSString) {
             completion(cached)
-            return
+            return nil
         }
         guard let url = URL(string: urlString) else {
             completion(nil)
-            return
+            return nil
         }
 
         var request = URLRequest(url: url)
@@ -38,7 +41,11 @@ final class ImageLoader {
             request.setValue("\(scheme)://\(host)/", forHTTPHeaderField: "Referer")
         }
 
-        session.dataTask(with: request) { [weak self] data, _, _ in
+        let task = session.dataTask(with: request) { [weak self] data, _, error in
+            if error != nil {
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
             guard let data = data,
                   let image = UIImage(data: data),
                   image.size.width > 10 else {
@@ -47,6 +54,8 @@ final class ImageLoader {
             }
             self?.cache.setObject(image, forKey: urlString as NSString)
             DispatchQueue.main.async { completion(image) }
-        }.resume()
+        }
+        task.resume()
+        return task
     }
 }
