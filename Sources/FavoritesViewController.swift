@@ -157,7 +157,7 @@ final class FavoritesViewController: UITableViewController {
 
     // MARK: - 表格
 
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+    override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
         return 2

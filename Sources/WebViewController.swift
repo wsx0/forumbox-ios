@@ -11,6 +11,12 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var observations: [NSKeyValueObservation] = []
     private var isReaderMode = false
 
+    private let loadingOverlay = UIView()
+    private let loadingEmoji = UILabel()
+    private let loadingTitle = UILabel()
+    private let loadingSpinner = UIActivityIndicatorView(style: .large)
+    private var hasHiddenLoading = false
+
     private lazy var backButton = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(goBack))
     private lazy var forwardButton = UIBarButtonItem(image: UIImage(systemName: "chevron.right"), style: .plain, target: self, action: #selector(goForward))
     private lazy var reloadButton = UIBarButtonItem(image: UIImage(systemName: "arrow.clockwise"), style: .plain, target: self, action: #selector(reload))
@@ -35,6 +41,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         self.site = site
         self.searchQuery = searchQuery
         super.init(nibName: nil, bundle: nil)
+        hidesBottomBarWhenPushed = true
     }
 
     convenience init(title: String, urlString: String) {
@@ -53,6 +60,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
         buildWebView()
         buildLayout()
+        setupLoadingOverlay()
         observeWebView()
         updateButtons()
 
@@ -72,7 +80,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         updateFavoriteButton()
     }
 
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+    override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
     // MARK: - 构建
 
@@ -97,6 +105,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.translatesAutoresizingMaskIntoConstraints = false
+        webView.isOpaque = false
+        webView.backgroundColor = Theme.bgTop
+        webView.scrollView.backgroundColor = Theme.bgTop
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
@@ -150,6 +161,58 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             let progress = Float(view.estimatedProgress)
             self.progressView.setProgress(progress, animated: true)
             self.progressView.isHidden = progress >= 1.0
+        })
+    }
+
+    // MARK: - 加载过渡（让打开论坛的过程和 App 风格统一）
+
+    private func setupLoadingOverlay() {
+        loadingOverlay.backgroundColor = Theme.bgTop
+        loadingOverlay.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(loadingOverlay)
+        NSLayoutConstraint.activate([
+            loadingOverlay.topAnchor.constraint(equalTo: view.topAnchor),
+            loadingOverlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            loadingOverlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            loadingOverlay.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
+
+        loadingEmoji.text = site.emoji
+        loadingEmoji.font = .systemFont(ofSize: 42)
+        loadingEmoji.textAlignment = .center
+        loadingEmoji.translatesAutoresizingMaskIntoConstraints = false
+        loadingOverlay.addSubview(loadingEmoji)
+
+        loadingTitle.text = "正在打开 \(site.name)"
+        loadingTitle.font = Theme.rounded(14, .medium)
+        loadingTitle.textColor = Theme.textDim
+        loadingTitle.textAlignment = .center
+        loadingTitle.translatesAutoresizingMaskIntoConstraints = false
+        loadingOverlay.addSubview(loadingTitle)
+
+        loadingSpinner.color = Theme.accent
+        loadingSpinner.translatesAutoresizingMaskIntoConstraints = false
+        loadingOverlay.addSubview(loadingSpinner)
+        loadingSpinner.startAnimating()
+
+        NSLayoutConstraint.activate([
+            loadingSpinner.centerXAnchor.constraint(equalTo: loadingOverlay.centerXAnchor),
+            loadingSpinner.centerYAnchor.constraint(equalTo: loadingOverlay.centerYAnchor),
+            loadingEmoji.centerXAnchor.constraint(equalTo: loadingOverlay.centerXAnchor),
+            loadingEmoji.bottomAnchor.constraint(equalTo: loadingSpinner.topAnchor, constant: -18),
+            loadingTitle.centerXAnchor.constraint(equalTo: loadingOverlay.centerXAnchor),
+            loadingTitle.topAnchor.constraint(equalTo: loadingSpinner.bottomAnchor, constant: 12)
+        ])
+    }
+
+    private func hideLoadingOverlay() {
+        guard !hasHiddenLoading else { return }
+        hasHiddenLoading = true
+        loadingSpinner.stopAnimating()
+        UIView.animate(withDuration: 0.25, animations: {
+            self.loadingOverlay.alpha = 0
+        }, completion: { _ in
+            self.loadingOverlay.isHidden = true
         })
     }
 
@@ -313,6 +376,15 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         updateFavoriteButton()
+        hideLoadingOverlay()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        hideLoadingOverlay()
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        hideLoadingOverlay()
     }
 
     // target=_blank 的新窗口在当前 WebView 内打开
@@ -406,6 +478,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                                  siteName: site.name,
                                  siteEmoji: site.emoji,
                                  folderId: folderId)
+        Haptics.success()
         updateFavoriteButton()
     }
 

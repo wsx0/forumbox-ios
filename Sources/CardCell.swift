@@ -22,7 +22,8 @@ final class CardCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         backgroundColor = .clear
-        selectionStyle = .none
+        selectionStyle = .default
+        selectedBackgroundView = UIView()
 
         container.backgroundColor = Theme.card
         container.layer.cornerRadius = 16
@@ -119,6 +120,15 @@ final class CardCell: UITableViewCell {
             detailLabel.isHidden = true
         }
         chevronLabel.isHidden = !model.showsChevron
+    }
+
+    override func setHighlighted(_ highlighted: Bool, animated: Bool) {
+        super.setHighlighted(highlighted, animated: animated)
+        UIView.animate(withDuration: 0.12) {
+            self.container.transform = highlighted
+                ? CGAffineTransform(scaleX: 0.985, y: 0.985)
+                : .identity
+        }
     }
 }
 

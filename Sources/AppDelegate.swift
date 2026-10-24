@@ -10,6 +10,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.tintColor = Theme.accent
+        window.overrideUserInterfaceStyle = Theme.userInterfaceStyle
         window.rootViewController = MainTabBarController.make()
         window.makeKeyAndVisible()
         self.window = window

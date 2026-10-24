@@ -9,8 +9,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.9.0"
-    CURRENT_PROJECT_VERSION: "10"
+    MARKETING_VERSION: "2.0.0"
+    CURRENT_PROJECT_VERSION: "11"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     SUPPORTS_MACCATALYST: "NO"
 
@@ -45,7 +45,6 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSRequiresIPhoneOS: true
-        UIUserInterfaceStyle: Dark
         UIRequiresFullScreen: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:

@@ -4,6 +4,7 @@ import UIKit
 struct Palette {
     let key: String
     let displayName: String
+    let isLight: Bool
     let bgTop: UIColor
     let bgBottom: UIColor
     let card: UIColor
@@ -24,13 +25,16 @@ final class ThemeManager {
     static let shared = ThemeManager()
 
     enum Style: String, CaseIterable {
-        case sakura, ocean, cyber, black
+        case sakura, sakuraLight, ocean, sky, cyber, cream, black
 
         var displayName: String {
             switch self {
             case .sakura: return "夜樱"
+            case .sakuraLight: return "樱白"
             case .ocean: return "深海蓝"
+            case .sky: return "晴空"
             case .cyber: return "赛博紫"
+            case .cream: return "奶油"
             case .black: return "纯黑"
             }
         }
@@ -48,7 +52,7 @@ final class ThemeManager {
         switch style {
         case .sakura:
             return Palette(
-                key: "sakura", displayName: "夜樱",
+                key: "sakura", displayName: "夜樱", isLight: false,
                 bgTop: UIColor(red: 26/255, green: 19/255, blue: 51/255, alpha: 1),
                 bgBottom: UIColor(red: 16/255, green: 12/255, blue: 34/255, alpha: 1),
                 card: UIColor(red: 40/255, green: 30/255, blue: 76/255, alpha: 0.93),
@@ -62,9 +66,25 @@ final class ThemeManager {
                 emojiBg: UIColor(red: 124/255, green: 92/255, blue: 255/255, alpha: 0.24),
                 backgroundImageName: "BGSakura",
                 showsPetals: true)
+        case .sakuraLight:
+            return Palette(
+                key: "sakuraLight", displayName: "樱白", isLight: true,
+                bgTop: UIColor(red: 255/255, green: 247/255, blue: 252/255, alpha: 1),
+                bgBottom: UIColor(red: 255/255, green: 235/255, blue: 244/255, alpha: 1),
+                card: UIColor(red: 255/255, green: 255/255, blue: 255/255, alpha: 0.95),
+                cardBorder: UIColor(red: 240/255, green: 120/255, blue: 165/255, alpha: 0.25),
+                accent: UIColor(red: 240/255, green: 98/255, blue: 146/255, alpha: 1),
+                accentSoft: UIColor(red: 186/255, green: 104/255, blue: 200/255, alpha: 1),
+                text: UIColor(red: 43/255, green: 36/255, blue: 55/255, alpha: 1),
+                textDim: UIColor(red: 107/255, green: 98/255, blue: 120/255, alpha: 1),
+                textFaint: UIColor(red: 154/255, green: 143/255, blue: 168/255, alpha: 1),
+                navBg: UIColor(red: 255/255, green: 252/255, blue: 254/255, alpha: 1),
+                emojiBg: UIColor(red: 255/255, green: 143/255, blue: 177/255, alpha: 0.16),
+                backgroundImageName: nil,
+                showsPetals: false)
         case .ocean:
             return Palette(
-                key: "ocean", displayName: "深海蓝",
+                key: "ocean", displayName: "深海蓝", isLight: false,
                 bgTop: UIColor(red: 8/255, green: 36/255, blue: 59/255, alpha: 1),
                 bgBottom: UIColor(red: 3/255, green: 16/255, blue: 28/255, alpha: 1),
                 card: UIColor(red: 14/255, green: 42/255, blue: 68/255, alpha: 0.93),
@@ -78,9 +98,25 @@ final class ThemeManager {
                 emojiBg: UIColor(red: 56/255, green: 189/255, blue: 248/255, alpha: 0.20),
                 backgroundImageName: nil,
                 showsPetals: false)
+        case .sky:
+            return Palette(
+                key: "sky", displayName: "晴空", isLight: true,
+                bgTop: UIColor(red: 244/255, green: 249/255, blue: 255/255, alpha: 1),
+                bgBottom: UIColor(red: 232/255, green: 242/255, blue: 255/255, alpha: 1),
+                card: UIColor(red: 255/255, green: 255/255, blue: 255/255, alpha: 0.95),
+                cardBorder: UIColor(red: 46/255, green: 144/255, blue: 250/255, alpha: 0.22),
+                accent: UIColor(red: 46/255, green: 144/255, blue: 250/255, alpha: 1),
+                accentSoft: UIColor(red: 99/255, green: 102/255, blue: 241/255, alpha: 1),
+                text: UIColor(red: 22/255, green: 34/255, blue: 58/255, alpha: 1),
+                textDim: UIColor(red: 90/255, green: 110/255, blue: 140/255, alpha: 1),
+                textFaint: UIColor(red: 130/255, green: 150/255, blue: 180/255, alpha: 1),
+                navBg: UIColor(red: 250/255, green: 252/255, blue: 255/255, alpha: 1),
+                emojiBg: UIColor(red: 46/255, green: 144/255, blue: 250/255, alpha: 0.14),
+                backgroundImageName: nil,
+                showsPetals: false)
         case .cyber:
             return Palette(
-                key: "cyber", displayName: "赛博紫",
+                key: "cyber", displayName: "赛博紫", isLight: false,
                 bgTop: UIColor(red: 18/255, green: 7/255, blue: 31/255, alpha: 1),
                 bgBottom: UIColor(red: 5/255, green: 3/255, blue: 10/255, alpha: 1),
                 card: UIColor(red: 36/255, green: 16/255, blue: 64/255, alpha: 0.93),
@@ -94,9 +130,25 @@ final class ThemeManager {
                 emojiBg: UIColor(red: 232/255, green: 121/255, blue: 249/255, alpha: 0.18),
                 backgroundImageName: nil,
                 showsPetals: false)
+        case .cream:
+            return Palette(
+                key: "cream", displayName: "奶油", isLight: true,
+                bgTop: UIColor(red: 255/255, green: 250/255, blue: 242/255, alpha: 1),
+                bgBottom: UIColor(red: 255/255, green: 240/255, blue: 219/255, alpha: 1),
+                card: UIColor(red: 255/255, green: 255/255, blue: 255/255, alpha: 0.95),
+                cardBorder: UIColor(red: 240/255, green: 138/255, blue: 60/255, alpha: 0.22),
+                accent: UIColor(red: 240/255, green: 138/255, blue: 60/255, alpha: 1),
+                accentSoft: UIColor(red: 245/255, green: 158/255, blue: 11/255, alpha: 1),
+                text: UIColor(red: 58/255, green: 46/255, blue: 34/255, alpha: 1),
+                textDim: UIColor(red: 120/255, green: 100/255, blue: 80/255, alpha: 1),
+                textFaint: UIColor(red: 160/255, green: 140/255, blue: 120/255, alpha: 1),
+                navBg: UIColor(red: 255/255, green: 253/255, blue: 247/255, alpha: 1),
+                emojiBg: UIColor(red: 240/255, green: 138/255, blue: 60/255, alpha: 0.14),
+                backgroundImageName: nil,
+                showsPetals: false)
         case .black:
             return Palette(
-                key: "black", displayName: "纯黑",
+                key: "black", displayName: "纯黑", isLight: false,
                 bgTop: .black,
                 bgBottom: .black,
                 card: UIColor(red: 17/255, green: 17/255, blue: 17/255, alpha: 0.96),
@@ -135,6 +187,29 @@ enum Theme {
     static var textFaint: UIColor { return palette.textFaint }
     static var navBg: UIColor { return palette.navBg }
     static var emojiBg: UIColor { return palette.emojiBg }
+
+    /// 主题亮色下的状态栏 / 键盘样式
+    static var statusBarStyle: UIStatusBarStyle {
+        return palette.isLight ? .darkContent : .lightContent
+    }
+
+    static var userInterfaceStyle: UIUserInterfaceStyle {
+        return palette.isLight ? .light : .dark
+    }
+
+    static var keyboardAppearance: UIKeyboardAppearance {
+        return palette.isLight ? .light : .dark
+    }
+
+    /// 强调色上应该用什么文字颜色
+    static var onAccent: UIColor {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        if palette.accent.getRed(&r, green: &g, blue: &b, alpha: &a) {
+            let luminance = 0.299 * r + 0.587 * g + 0.114 * b
+            return luminance > 0.66 ? .black : .white
+        }
+        return .white
+    }
 
     static func rounded(_ size: CGFloat, _ weight: UIFont.Weight = .bold) -> UIFont {
         let base = UIFont.systemFont(ofSize: size, weight: weight)
@@ -177,10 +252,11 @@ enum Theme {
     /// 应用导航栏 / 底部 Tab / 全局色调
     static func applyAppearance() {
         let palette = ThemeManager.shared.palette
+
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = palette.navBg
-        appearance.shadowColor = palette.cardBorder
+        appearance.shadowColor = palette.isLight ? UIColor(white: 0, alpha: 0.08) : palette.cardBorder
         appearance.titleTextAttributes = [.foregroundColor: palette.text, .font: rounded(17)]
         appearance.largeTitleTextAttributes = [.foregroundColor: palette.text, .font: rounded(28)]
         UINavigationBar.appearance().standardAppearance = appearance
@@ -191,14 +267,14 @@ enum Theme {
         let itemAppearance = UITabBarItemAppearance()
         itemAppearance.normal.iconColor = palette.textFaint
         itemAppearance.normal.titleTextAttributes = [.foregroundColor: palette.textFaint,
-                                                     .font: rounded(10, .medium)]
+                                                     .font: rounded(9.5, .medium)]
         itemAppearance.selected.iconColor = palette.accent
         itemAppearance.selected.titleTextAttributes = [.foregroundColor: palette.accent,
-                                                       .font: rounded(10, .semibold)]
+                                                       .font: rounded(9.5, .semibold)]
         let tabAppearance = UITabBarAppearance()
         tabAppearance.configureWithOpaqueBackground()
         tabAppearance.backgroundColor = palette.navBg
-        tabAppearance.shadowColor = palette.cardBorder
+        tabAppearance.shadowColor = palette.isLight ? UIColor(white: 0, alpha: 0.08) : palette.cardBorder
         tabAppearance.stackedLayoutAppearance = itemAppearance
         tabAppearance.inlineLayoutAppearance = itemAppearance
         tabAppearance.compactInlineLayoutAppearance = itemAppearance

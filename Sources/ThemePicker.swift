@@ -27,6 +27,7 @@ enum ThemePicker {
         let root = MainTabBarController.make()
         window.rootViewController = root
         window.tintColor = Theme.accent
+        window.overrideUserInterfaceStyle = Theme.userInterfaceStyle
         UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: nil, completion: nil)
     }
 }

@@ -12,6 +12,33 @@ struct SiteThreadResult {
     let items: [ThreadItem]
 }
 
+/// 扁平信息流里的一条（帖子 + 来源站点）
+struct FeedEntry {
+    let site: Site
+    let item: ThreadItem
+}
+
+/// 把各站结果交错合并（每个站轮流取一条），避免全挤在同一个站
+func interleavedEntries(_ results: [SiteThreadResult]) -> [FeedEntry] {
+    var perSite: [[FeedEntry]] = results.map { result in
+        result.items.map { FeedEntry(site: result.site, item: $0) }
+    }
+    var entries: [FeedEntry] = []
+    var index = 0
+    while true {
+        var added = false
+        for list in perSite {
+            if index < list.count {
+                entries.append(list[index])
+                added = true
+            }
+        }
+        if !added { break }
+        index += 1
+    }
+    return entries
+}
+
 /// 后台静默抓取一个页面里的帖子链接（搜索页 / 精华页通用）
 final class ThreadFetchTask: NSObject, WKNavigationDelegate {
 

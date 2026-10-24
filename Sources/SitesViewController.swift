@@ -166,7 +166,7 @@ final class SitesViewController: UITableViewController {
 
     // MARK: - 表格
 
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+    override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return Sites.all.count
@@ -186,6 +186,7 @@ final class SitesViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
         guard indexPath.row < Sites.all.count else { return }
         let site = Sites.all[indexPath.row]
+        Haptics.tap()
         navigationController?.pushViewController(WebViewController(site: site), animated: true)
     }
 
