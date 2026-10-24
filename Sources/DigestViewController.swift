@@ -1,13 +1,18 @@
 import UIKit
 
-/// 全部精华：按站点分组展示各论坛精华帖
+/// 精华页：按论坛分组展示各站精华帖
 final class DigestViewController: UITableViewController {
 
     private let aggregator = SiteFetchAggregator()
     private var sections: [SiteThreadResult] = []
     private var isFetching = false
     private let spinner = UIActivityIndicatorView(style: .medium)
-    private var hasLoaded = false
+    private let emptyHint = UILabel()
+
+    private lazy var themeButton = UIBarButtonItem(image: UIImage(systemName: "paintpalette"),
+                                                   style: .plain,
+                                                   target: self,
+                                                   action: #selector(showThemePicker))
 
     deinit {
         aggregator.cancel()
@@ -15,15 +20,27 @@ final class DigestViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "全部精华"
+        title = "精华"
         view.backgroundColor = Theme.bgTop
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
         tableView.rowHeight = 78
         tableView.contentInset = UIEdgeInsets(top: 6, left: 0, bottom: 24, right: 0)
         tableView.register(CardCell.self, forCellReuseIdentifier: "CardCell")
-        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
         navigationItem.backButtonDisplayMode = .minimal
+        navigationItem.leftBarButtonItem = themeButton
+        navigationController?.navigationBar.prefersLargeTitles = false
+
+        let background = Theme.makeBackgroundView(tableView.bounds)
+        tableView.backgroundView = background
+        emptyHint.text = "还没有可抓取精华的论坛\n\n去「论坛」页 → 编辑站点 → 填写「精华页地址」"
+        emptyHint.numberOfLines = 0
+        emptyHint.textAlignment = .center
+        emptyHint.textColor = Theme.textFaint
+        emptyHint.font = Theme.rounded(14, .medium)
+        emptyHint.frame = background.bounds
+        emptyHint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        background.addSubview(emptyHint)
 
         let refresh = UIRefreshControl()
         refresh.tintColor = Theme.accent
@@ -31,19 +48,19 @@ final class DigestViewController: UITableViewController {
         tableView.refreshControl = refresh
 
         spinner.color = Theme.accent
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        if !hasLoaded {
-            hasLoaded = true
-            loadDigest()
-        }
+        loadDigest()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         tableView.backgroundView?.frame = tableView.bounds
+        if let background = tableView.backgroundView {
+            emptyHint.frame = background.bounds
+        }
+    }
+
+    @objc private func showThemePicker() {
+        ThemePicker.present(from: self, sourceItem: themeButton)
     }
 
     @objc private func pullRefresh() {
@@ -54,15 +71,23 @@ final class DigestViewController: UITableViewController {
 
     private func loadDigest() {
         guard !isFetching else { return }
-        isFetching = true
-        sections = Sites.all.filter { $0.digestURL != nil }.map {
-            SiteThreadResult(site: $0, status: "抓取中…", items: [])
+        let digestSites = Sites.all.filter { $0.digestURL != nil }
+        guard !digestSites.isEmpty else {
+            sections = []
+            isFetching = false
+            emptyHint.isHidden = false
+            tableView.refreshControl?.endRefreshing()
+            tableView.reloadData()
+            return
         }
+        isFetching = true
+        emptyHint.isHidden = true
+        sections = digestSites.map { SiteThreadResult(site: $0, status: "抓取中…", items: []) }
         spinner.startAnimating()
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: spinner)
         tableView.reloadData()
 
-        aggregator.start(sites: Sites.all,
+        aggregator.start(sites: digestSites,
                          needsAutoSearch: false,
                          urlForSite: { $0.digestURL },
                          update: { [weak self] result in
@@ -78,11 +103,14 @@ final class DigestViewController: UITableViewController {
                             self.spinner.stopAnimating()
                             self.navigationItem.rightBarButtonItem = nil
                             self.tableView.refreshControl?.endRefreshing()
+                            self.emptyHint.isHidden = !self.sections.isEmpty
                             self.tableView.reloadData()
                          })
     }
 
     // MARK: - 表格
+
+    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
         return sections.count
