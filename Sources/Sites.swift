@@ -1,6 +1,6 @@
 import Foundation
 
-struct Site {
+struct Site: Codable, Equatable {
     let name: String
     let note: String
     let url: String
@@ -23,7 +23,8 @@ struct Site {
 }
 
 enum Sites {
-    static let all: [Site] = [
+    /// 首次安装时的默认站点
+    static let defaults: [Site] = [
         Site(name: "98堂",
              note: "Discuz! · 综合论坛",
              url: "https://sehuatang.net/forum.php?forumlist=1&mobile=2",
@@ -60,4 +61,65 @@ enum Sites {
              searchURL: "http://pornolab.net/forum/search.php",
              emoji: "🌍")
     ]
+
+    /// 当前站点列表（跟随 SiteStore，可在 App 内增删改）
+    static var all: [Site] {
+        return SiteStore.shared.sites
+    }
+}
+
+/// 站点列表存储（UserDefaults JSON）
+final class SiteStore {
+
+    static let shared = SiteStore()
+
+    private let storageKey = "fb_sites_v1"
+    private(set) var sites: [Site] = []
+
+    private init() {
+        if let data = UserDefaults.standard.data(forKey: storageKey),
+           let decoded = try? JSONDecoder().decode([Site].self, from: data),
+           !decoded.isEmpty {
+            sites = decoded
+        } else {
+            sites = Sites.defaults
+        }
+    }
+
+    func add(_ site: Site) {
+        sites.append(site)
+        persist()
+    }
+
+    func replace(at index: Int, with site: Site) {
+        guard sites.indices.contains(index) else { return }
+        sites[index] = site
+        persist()
+    }
+
+    func remove(at index: Int) {
+        guard sites.indices.contains(index) else { return }
+        sites.remove(at: index)
+        persist()
+    }
+
+    func move(from source: Int, to destination: Int) {
+        guard sites.indices.contains(source) else { return }
+        let item = sites.remove(at: source)
+        let target = min(max(destination, 0), sites.count)
+        sites.insert(item, at: target)
+        persist()
+    }
+
+    /// 恢复默认站点
+    func reset() {
+        sites = Sites.defaults
+        persist()
+    }
+
+    private func persist() {
+        if let data = try? JSONEncoder().encode(sites) {
+            UserDefaults.standard.set(data, forKey: storageKey)
+        }
+    }
 }
