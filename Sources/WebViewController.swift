@@ -18,10 +18,23 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var hasHiddenLoading = false
     private var favoritesObserver: NSObjectProtocol?
 
+    private var toolbar: UIToolbar!
+    private var bottomFiller: UIView!
+    private var webBottomToToolbar: NSLayoutConstraint!
+    private var webBottomToSafeArea: NSLayoutConstraint!
+    private var toolbarHidden = false
+    private var lastScrollOffset: CGFloat = 0
+    private var ignoreScrollUntil = Date.distantPast
+    private var isLoading = false
+    private var hasFadedInContent = false
+
+    private let errorOverlay = UIView()
+    private let errorDetailLabel = UILabel()
+
     private lazy var backButton = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(goBack))
     private lazy var forwardButton = UIBarButtonItem(image: UIImage(systemName: "chevron.right"), style: .plain, target: self, action: #selector(goForward))
     private lazy var reloadButton = UIBarButtonItem(image: UIImage(systemName: "arrow.clockwise"), style: .plain, target: self, action: #selector(reload))
-    private lazy var safariButton = UIBarButtonItem(image: UIImage(systemName: "safari"), style: .plain, target: self, action: #selector(openInSafari))
+    private lazy var homeButton = UIBarButtonItem(image: UIImage(systemName: "house"), style: .plain, target: self, action: #selector(goHome))
     private lazy var moreButton = UIBarButtonItem(image: UIImage(systemName: "ellipsis.circle"), style: .plain, target: self, action: #selector(showMoreMenu))
     private lazy var favoriteButton = UIBarButtonItem(image: UIImage(systemName: "star"), style: .plain, target: self, action: #selector(toggleFavorite))
 
@@ -62,8 +75,18 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         buildWebView()
         buildLayout()
         setupLoadingOverlay()
+        setupErrorOverlay()
         observeWebView()
         updateButtons()
+
+        // 下拉刷新
+        let refresh = UIRefreshControl()
+        refresh.tintColor = Theme.accent
+        refresh.addTarget(self, action: #selector(pulledToRefresh), for: .valueChanged)
+        webView.scrollView.refreshControl = refresh
+
+        // 边缘右滑返回列表（和系统 App 一致）
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = true
 
         // 收藏在其他页面被修改时，同步星标
         favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
@@ -119,9 +142,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         webView.isOpaque = false
         webView.backgroundColor = Theme.bgTop
         webView.scrollView.backgroundColor = Theme.bgTop
+        webView.alpha = 0
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        webView.allowsBackForwardNavigationGestures = true
+        webView.allowsBackForwardNavigationGestures = false
         view.addSubview(webView)
         self.webView = webView
     }
@@ -139,19 +163,44 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         toolbar.barTintColor = Theme.navBg
         toolbar.tintColor = Theme.textDim
         let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-        toolbar.items = [backButton, flex, forwardButton, flex, reloadButton, flex, safariButton]
+        toolbar.items = [backButton, flex, forwardButton, flex, homeButton, flex, reloadButton]
         view.addSubview(toolbar)
+        self.toolbar = toolbar
+
+        let filler = UIView()
+        filler.backgroundColor = Theme.navBg
+        filler.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(filler)
+        self.bottomFiller = filler
+
+        let separator = UIView()
+        separator.backgroundColor = Theme.cardBorder
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(separator)
+
+        webBottomToToolbar = webView.bottomAnchor.constraint(equalTo: toolbar.topAnchor)
+        webBottomToSafeArea = webView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        webBottomToToolbar.isActive = true
 
         NSLayoutConstraint.activate([
             webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: toolbar.topAnchor),
 
             toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             toolbar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             toolbar.heightAnchor.constraint(equalToConstant: 44),
+
+            filler.topAnchor.constraint(equalTo: toolbar.bottomAnchor),
+            filler.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            filler.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            filler.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            separator.bottomAnchor.constraint(equalTo: toolbar.topAnchor),
+            separator.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            separator.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            separator.heightAnchor.constraint(equalToConstant: 0.5),
 
             progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -168,10 +217,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             self?.updateButtons()
         })
         observations.append(webView.observe(\.estimatedProgress, options: [.new]) { [weak self] view, _ in
-            guard let self = self else { return }
-            let progress = Float(view.estimatedProgress)
-            self.progressView.setProgress(progress, animated: true)
-            self.progressView.isHidden = progress >= 1.0
+            self?.progressView.setProgress(Float(view.estimatedProgress), animated: true)
+        })
+        observations.append(webView.scrollView.observe(\.contentOffset, options: [.new]) { [weak self] scrollView, _ in
+            self?.handleScroll(scrollView.contentOffset.y)
         })
     }
 
@@ -225,6 +274,151 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         }, completion: { _ in
             self.loadingOverlay.isHidden = true
         })
+    }
+
+    // MARK: - 错误页 / 加载状态 / 工具栏自动隐藏
+
+    private func setupErrorOverlay() {
+        errorOverlay.backgroundColor = Theme.bgTop
+        errorOverlay.translatesAutoresizingMaskIntoConstraints = false
+        errorOverlay.isHidden = true
+        view.addSubview(errorOverlay)
+        NSLayoutConstraint.activate([
+            errorOverlay.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            errorOverlay.bottomAnchor.constraint(equalTo: toolbar.topAnchor),
+            errorOverlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            errorOverlay.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
+
+        let emoji = UILabel()
+        emoji.text = "📡"
+        emoji.font = .systemFont(ofSize: 44)
+
+        let title = UILabel()
+        title.text = "网页打不开"
+        title.font = Theme.rounded(17, .bold)
+        title.textColor = Theme.text
+        title.textAlignment = .center
+
+        errorDetailLabel.font = .systemFont(ofSize: 12.5)
+        errorDetailLabel.textColor = Theme.textFaint
+        errorDetailLabel.numberOfLines = 3
+        errorDetailLabel.textAlignment = .center
+
+        let retry = UIButton(type: .system)
+        retry.setTitle("重新加载", for: .normal)
+        retry.setTitleColor(Theme.onAccent, for: .normal)
+        retry.titleLabel?.font = Theme.rounded(14, .semibold)
+        retry.backgroundColor = Theme.accent
+        retry.layer.cornerRadius = 12
+        retry.contentEdgeInsets = UIEdgeInsets(top: 10, left: 24, bottom: 10, right: 24)
+        retry.addTarget(self, action: #selector(retryFromError), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [emoji, title, errorDetailLabel, retry])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 12
+        stack.setCustomSpacing(18, after: errorDetailLabel)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        errorOverlay.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.centerXAnchor.constraint(equalTo: errorOverlay.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: errorOverlay.centerYAnchor),
+            stack.leadingAnchor.constraint(greaterThanOrEqualTo: errorOverlay.leadingAnchor, constant: 32),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: errorOverlay.trailingAnchor, constant: -32)
+        ])
+    }
+
+    private func showError(_ message: String) {
+        errorDetailLabel.text = message + "\n请检查网络 / 代理，或稍后重试"
+        errorOverlay.isHidden = false
+        view.bringSubviewToFront(errorOverlay)
+    }
+
+    private func hideError() {
+        errorOverlay.isHidden = true
+    }
+
+    @objc private func retryFromError() {
+        hideError()
+        Haptics.tap()
+        if webView.url == nil {
+            load()
+        } else {
+            webView.reload()
+        }
+    }
+
+    private func setLoading(_ loading: Bool) {
+        isLoading = loading
+        progressView.isHidden = !loading
+        if loading {
+            progressView.setProgress(0, animated: false)
+        }
+        reloadButton.image = UIImage(systemName: loading ? "xmark" : "arrow.clockwise")
+        reloadButton.action = loading ? #selector(stopLoading) : #selector(reload)
+    }
+
+    @objc private func stopLoading() {
+        Haptics.tap()
+        webView.stopLoading()
+        setLoading(false)
+    }
+
+    private func handleScroll(_ offset: CGFloat) {
+        guard Date() > ignoreScrollUntil else { return }
+        let delta = offset - lastScrollOffset
+        lastScrollOffset = offset
+        guard abs(delta) > 28 else { return }
+        if offset < 80 {
+            setToolbarHidden(false, animated: true)
+        } else if delta > 0 {
+            setToolbarHidden(true, animated: true)
+        } else if delta < -8 {
+            setToolbarHidden(false, animated: true)
+        }
+    }
+
+    private func setToolbarHidden(_ hidden: Bool, animated: Bool) {
+        guard toolbarHidden != hidden else { return }
+        toolbarHidden = hidden
+        ignoreScrollUntil = Date().addingTimeInterval(0.35)
+        if !hidden {
+            toolbar.isHidden = false
+        }
+        if hidden {
+            webBottomToToolbar.isActive = false
+            webBottomToSafeArea.isActive = true
+        } else {
+            webBottomToSafeArea.isActive = false
+            webBottomToToolbar.isActive = true
+        }
+
+        let animations = {
+            self.toolbar.transform = hidden
+                ? CGAffineTransform(translationX: 0, y: self.toolbar.bounds.height + 40)
+                : .identity
+            self.view.layoutIfNeeded()
+        }
+        let completion: (Bool) -> Void = { _ in
+            if hidden {
+                self.toolbar.isHidden = true
+                self.toolbar.transform = .identity
+            }
+        }
+        if animated {
+            UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseOut],
+                           animations: animations, completion: completion)
+        } else {
+            animations()
+            completion(true)
+        }
+    }
+
+    @objc private func pulledToRefresh() {
+        Haptics.tap()
+        setLoading(true)
+        webView.reload()
     }
 
     // MARK: - 广告拦截
@@ -327,6 +521,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             if let url = self?.webView.url { UIPasteboard.general.url = url }
         })
 
+        sheet.addAction(UIAlertAction(title: "分享页面", style: .default) { [weak self] _ in
+            self?.sharePage()
+        })
+
         sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
 
         if let pop = sheet.popoverPresentationController {
@@ -363,39 +561,107 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     }
 
     @objc private func goBack() {
+        Haptics.tap()
         if webView.canGoBack { webView.goBack() }
     }
 
     @objc private func goForward() {
+        Haptics.tap()
         if webView.canGoForward { webView.goForward() }
     }
 
     @objc private func reload() {
+        Haptics.tap()
         webView.reload()
     }
 
+    @objc private func goHome() {
+        Haptics.tap()
+        guard let url = URL(string: site.url) else { return }
+        isReaderMode = false
+        webView.load(URLRequest(url: url))
+    }
+
     @objc private func openInSafari() {
+        Haptics.tap()
         guard let url = webView.url else { return }
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    }
+
+    private func sharePage() {
+        guard let url = webView.url else { return }
+        let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let pop = activity.popoverPresentationController {
+            pop.barButtonItem = moreButton
+        }
+        present(activity, animated: true)
     }
 
     // MARK: - WKNavigationDelegate
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         isReaderMode = false
+        hideError()
+        setLoading(true)
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        setLoading(false)
+        webView.scrollView.refreshControl?.endRefreshing()
         updateFavoriteButton()
         hideLoadingOverlay()
+        if !hasFadedInContent {
+            hasFadedInContent = true
+            UIView.animate(withDuration: 0.25) {
+                self.webView.alpha = 1
+            }
+        }
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        hideLoadingOverlay()
+        handleFailure(error)
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        handleFailure(error)
+    }
+
+    private func handleFailure(_ error: Error) {
+        setLoading(false)
+        webView.scrollView.refreshControl?.endRefreshing()
         hideLoadingOverlay()
+        let nsError = error as NSError
+        if nsError.code == NSURLErrorCancelled {
+            return
+        }
+        if !hasFadedInContent {
+            hasFadedInContent = true
+            webView.alpha = 1
+        }
+        showError(nsError.localizedDescription)
+    }
+
+    // 非 http(s) 链接（magnet / tg / mailto 等）交给系统处理
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = navigationAction.request.url else {
+            decisionHandler(.allow)
+            return
+        }
+        let scheme = (url.scheme ?? "").lowercased()
+        let inAppSchemes: Set<String> = ["http", "https", "file", "about", "data", "blob", "javascript"]
+        if scheme.isEmpty || inAppSchemes.contains(scheme) {
+            decisionHandler(.allow)
+            return
+        }
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        } else {
+            UIPasteboard.general.string = url.absoluteString
+            presentNotice("已复制链接：\(url.absoluteString)")
+        }
+        decisionHandler(.cancel)
     }
 
     // target=_blank 的新窗口在当前 WebView 内打开
