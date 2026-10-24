@@ -16,6 +16,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private lazy var reloadButton = UIBarButtonItem(image: UIImage(systemName: "arrow.clockwise"), style: .plain, target: self, action: #selector(reload))
     private lazy var safariButton = UIBarButtonItem(image: UIImage(systemName: "safari"), style: .plain, target: self, action: #selector(openInSafari))
     private lazy var moreButton = UIBarButtonItem(image: UIImage(systemName: "ellipsis.circle"), style: .plain, target: self, action: #selector(showMoreMenu))
+    private lazy var favoriteButton = UIBarButtonItem(image: UIImage(systemName: "star"), style: .plain, target: self, action: #selector(toggleFavorite))
 
     private var adBlockEnabled: Bool {
         get {
@@ -48,7 +49,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         super.viewDidLoad()
         view.backgroundColor = Theme.bgTop
         title = site.name
-        navigationItem.rightBarButtonItem = moreButton
+        navigationItem.rightBarButtonItems = [favoriteButton, moreButton]
 
         buildWebView()
         buildLayout()
@@ -64,6 +65,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     deinit {
         observations.forEach { $0.invalidate() }
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateFavoriteButton()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
@@ -305,6 +311,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         isReaderMode = false
     }
 
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        updateFavoriteButton()
+    }
+
     // target=_blank 的新窗口在当前 WebView 内打开
     func webView(_ webView: WKWebView,
                  createWebViewWith configuration: WKWebViewConfiguration,
@@ -347,6 +357,79 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             return UIMenu(children: [openAction, copyAction, safariAction, shareAction])
         }
         completionHandler(configuration)
+    }
+
+    // MARK: - 收藏
+
+    @objc private func toggleFavorite() {
+        let url = currentPageURL
+        if let existing = FavoriteStore.shared.item(for: url) {
+            let alert = UIAlertController(title: "取消收藏？", message: existing.title, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+            alert.addAction(UIAlertAction(title: "取消收藏", style: .destructive) { [weak self] _ in
+                FavoriteStore.shared.remove(id: existing.id)
+                self?.updateFavoriteButton()
+            })
+            present(alert, animated: true)
+            return
+        }
+
+        let sheet = UIAlertController(title: "收藏到", message: nil, preferredStyle: .actionSheet)
+        sheet.addAction(UIAlertAction(title: "未分类", style: .default) { [weak self] _ in
+            self?.saveFavorite(folderId: nil)
+        })
+        for folder in FavoriteStore.shared.folders {
+            sheet.addAction(UIAlertAction(title: folder.name, style: .default) { [weak self] _ in
+                self?.saveFavorite(folderId: folder.id)
+            })
+        }
+        sheet.addAction(UIAlertAction(title: "新建收藏夹…", style: .default) { [weak self] _ in
+            self?.promptNewFolderAndSave()
+        })
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        if let pop = sheet.popoverPresentationController {
+            pop.barButtonItem = favoriteButton
+        }
+        present(sheet, animated: true)
+    }
+
+    private var currentPageURL: String {
+        let url = webView?.url?.absoluteString ?? ""
+        return url.isEmpty ? site.url : url
+    }
+
+    private func saveFavorite(folderId: UUID?) {
+        var title = (webView?.title ?? site.name).trimmingCharacters(in: .whitespacesAndNewlines)
+        if title.isEmpty { title = site.name }
+        FavoriteStore.shared.add(title: title,
+                                 url: currentPageURL,
+                                 siteName: site.name,
+                                 siteEmoji: site.emoji,
+                                 folderId: folderId)
+        updateFavoriteButton()
+    }
+
+    private func promptNewFolderAndSave() {
+        let alert = UIAlertController(title: "新建收藏夹", message: nil, preferredStyle: .alert)
+        alert.addTextField { field in
+            field.placeholder = "收藏夹名称"
+        }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "创建并收藏", style: .default) { [weak self, weak alert] _ in
+            guard let self = self,
+                  let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !name.isEmpty else { return }
+            let folder = FavoriteStore.shared.addFolder(name: name)
+            self.saveFavorite(folderId: folder.id)
+        })
+        present(alert, animated: true)
+    }
+
+    private func updateFavoriteButton() {
+        guard isViewLoaded, webView != nil else { return }
+        let favorited = FavoriteStore.shared.isFavorited(url: currentPageURL)
+        favoriteButton.image = UIImage(systemName: favorited ? "star.fill" : "star")
+        favoriteButton.tintColor = favorited ? Theme.accent : nil
     }
 
     // MARK: - 常量
