@@ -13,7 +13,6 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
     private let hintLabel = UILabel()
     private let spinner = UIActivityIndicatorView(style: .medium)
     private let aggregator = SearchAggregator()
-    private let bgColor = UIColor(red: 11/255, green: 18/255, blue: 32/255, alpha: 1)
 
     private var query = ""
     private var sections: [SearchAggregator.SiteResult] = []
@@ -24,16 +23,17 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "聚合搜索"
-        view.backgroundColor = bgColor
-        tableView.backgroundColor = bgColor
+        view.backgroundColor = Theme.bgTop
+        tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
         tableView.rowHeight = 78
         tableView.contentInset = UIEdgeInsets(top: 4, left: 0, bottom: 24, right: 0)
         tableView.keyboardDismissMode = .onDrag
         tableView.register(SearchResultCell.self, forCellReuseIdentifier: "SearchResultCell")
+        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
 
         let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 64))
-        header.backgroundColor = bgColor
+        header.backgroundColor = .clear
         searchBar.frame = CGRect(x: 6, y: 4, width: header.bounds.width - 12, height: 56)
         searchBar.autoresizingMask = [.flexibleWidth]
         searchBar.searchBarStyle = .minimal
@@ -41,22 +41,36 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         searchBar.placeholder = "输入关键词，合并搜索所有论坛"
         searchBar.delegate = self
         searchBar.searchTextField.textColor = .white
-        searchBar.searchTextField.backgroundColor = UIColor(red: 18/255, green: 30/255, blue: 53/255, alpha: 1)
-        searchBar.searchTextField.layer.cornerRadius = 10
+        searchBar.searchTextField.backgroundColor = Theme.card
+        searchBar.searchTextField.layer.cornerRadius = 12
         searchBar.searchTextField.clipsToBounds = true
+        searchBar.searchTextField.attributedPlaceholder = NSAttributedString(
+            string: "输入关键词，合并搜索所有论坛",
+            attributes: [.foregroundColor: Theme.textFaint])
         searchBar.keyboardAppearance = .dark
         searchBar.returnKeyType = .search
         header.addSubview(searchBar)
         tableView.tableHeaderView = header
 
-        spinner.color = UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1)
+        spinner.color = Theme.accent
 
         hintLabel.text = "输入关键词后点「搜索」，\nApp 会在各论坛同时搜索，再把结果合并到一个列表。"
         hintLabel.numberOfLines = 0
         hintLabel.textAlignment = .center
-        hintLabel.textColor = UIColor(red: 100/255, green: 116/255, blue: 139/255, alpha: 1)
-        hintLabel.font = .systemFont(ofSize: 14)
-        tableView.backgroundView = hintLabel
+        hintLabel.textColor = Theme.textFaint
+        hintLabel.font = Theme.rounded(14, .medium)
+        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
+        tableView.backgroundView?.addSubview(hintLabel)
+        hintLabel.frame = tableView.bounds
+        hintLabel.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let background = tableView.backgroundView {
+            background.frame = tableView.bounds
+            hintLabel.frame = background.bounds
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -85,7 +99,8 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
             sections.removeAll()
             manualRows.removeAll()
             aggregator.cancel()
-            tableView.backgroundView = hintLabel
+            tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
+            tableView.backgroundView?.addSubview(hintLabel)
             updateSpinner()
             tableView.reloadData()
         }
@@ -96,7 +111,7 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         guard !text.isEmpty else { return }
         query = text
         isSearching = true
-        tableView.backgroundView = nil
+        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
         sections = Sites.all.filter { $0.searchURL != nil }.map {
             SearchAggregator.SiteResult(site: $0, status: "搜索中…", items: [])
         }
@@ -141,10 +156,8 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         }
         let bingQuery = Self.bingAggregateQuery(query)
         let encoded = bingQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let bingSite = Site(name: "必应聚合搜索",
-                            note: "一次搜遍全部论坛",
-                            url: "https://www.bing.com/search?q=" + encoded,
-                            searchURL: nil)
+        let bingSite = Site(name: "必应聚合搜索", note: "一次搜遍全部论坛",
+                            url: "https://www.bing.com/search?q=" + encoded, searchURL: nil)
         rows.append(ManualRow(title: "必应聚合：一次搜全部论坛",
                               subtitle: "站内搜索不可用时用这个兜底",
                               site: bingSite,
@@ -175,10 +188,10 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
 
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let header = UIView()
-        header.backgroundColor = bgColor
+        header.backgroundColor = .clear
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .medium)
-        label.textColor = UIColor(red: 100/255, green: 116/255, blue: 139/255, alpha: 1)
+        label.font = Theme.rounded(12, .semibold)
+        label.textColor = Theme.textFaint
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = sectionTitle(section)
         header.addSubview(label)
@@ -197,9 +210,9 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
     private func sectionTitle(_ section: Int) -> String {
         if section < sections.count {
             let result = sections[section]
-            return "\(result.site.name) · \(result.status)"
+            return "\(result.site.emoji) \(result.site.name) · \(result.status)"
         }
-        return "手动打开各站搜索"
+        return "✦ 手动打开各站搜索"
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -225,7 +238,7 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
             let result = sections[indexPath.section]
             guard !result.items.isEmpty else { return }
             let item = result.items[indexPath.row]
-            let targetSite = Site(name: result.site.name, note: "", url: item.url)
+            let targetSite = Site(name: result.site.name, note: "", url: item.url, searchURL: nil, emoji: result.site.emoji)
             navigationController?.pushViewController(WebViewController(site: targetSite), animated: true)
         } else {
             let row = manualRows[indexPath.row]
@@ -246,20 +259,20 @@ final class SearchResultCell: UITableViewCell {
         backgroundColor = .clear
         selectionStyle = .none
 
-        container.backgroundColor = UIColor(red: 18/255, green: 30/255, blue: 53/255, alpha: 1)
+        container.backgroundColor = Theme.card
         container.layer.cornerRadius = 14
         container.layer.borderWidth = 1
-        container.layer.borderColor = UIColor(red: 30/255, green: 47/255, blue: 76/255, alpha: 1).cgColor
+        container.layer.borderColor = Theme.cardBorder.cgColor
         container.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(container)
 
-        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        titleLabel.textColor = .white
+        titleLabel.font = Theme.rounded(15.5, .semibold)
+        titleLabel.textColor = Theme.text
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.lineBreakMode = .byTruncatingTail
 
-        subtitleLabel.font = .systemFont(ofSize: 11, weight: .regular)
-        subtitleLabel.textColor = UIColor(red: 100/255, green: 116/255, blue: 139/255, alpha: 1)
+        subtitleLabel.font = .systemFont(ofSize: 10.5, weight: .medium)
+        subtitleLabel.textColor = Theme.textFaint
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         subtitleLabel.lineBreakMode = .byTruncatingTail
 
