@@ -20,12 +20,17 @@ final class SearchAggregator {
 
     private let maxConcurrent = 2
 
+    deinit {
+        cancel()
+    }
+
     func cancel() {
         isCancelled = true
         pendingSites.removeAll()
         activeTasks.forEach { $0.cancel() }
         activeTasks.removeAll()
         activeCount = 0
+        updateBlock = nil
         finishBlock = nil
     }
 
@@ -93,6 +98,7 @@ final class SearchTask: NSObject, WKNavigationDelegate {
 
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()   // 复用登录态/Cookie
+        config.defaultWebpagePreferences.preferredContentMode = .mobile
         config.userContentController.addUserScript(
             WKUserScript(source: WebScripts.popupSuppressor,
                          injectionTime: .atDocumentStart,
@@ -104,6 +110,7 @@ final class SearchTask: NSObject, WKNavigationDelegate {
         self.webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: config)
 
         super.init()
+        self.webView.customUserAgent = UserAgents.mobileSafari
         self.webView.navigationDelegate = self
     }
 
