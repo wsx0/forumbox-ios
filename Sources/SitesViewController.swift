@@ -4,6 +4,24 @@ final class SitesViewController: UITableViewController {
 
     private let bgColor = UIColor(red: 11/255, green: 18/255, blue: 32/255, alpha: 1)
 
+    private lazy var searchButton: UIButton = {
+        let button = UIButton(type: .system)
+        var config = UIButton.Configuration.plain()
+        config.title = "搜索 7 个论坛"
+        config.image = UIImage(systemName: "magnifyingglass")
+        config.imagePadding = 8
+        config.baseForegroundColor = UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1)
+        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+        button.configuration = config
+        button.contentHorizontalAlignment = .leading
+        button.backgroundColor = UIColor(red: 18/255, green: 30/255, blue: 53/255, alpha: 1)
+        button.layer.cornerRadius = 12
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor(red: 30/255, green: 47/255, blue: 76/255, alpha: 1).cgColor
+        button.addTarget(self, action: #selector(openSearch), for: .touchUpInside)
+        return button
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "论坛盒子"
@@ -15,6 +33,20 @@ final class SitesViewController: UITableViewController {
         tableView.register(SiteCell.self, forCellReuseIdentifier: "SiteCell")
         navigationItem.backButtonDisplayMode = .minimal
         navigationController?.navigationBar.prefersLargeTitles = false
+        setupSearchHeader()
+    }
+
+    private func setupSearchHeader() {
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 64))
+        header.backgroundColor = bgColor
+        searchButton.frame = CGRect(x: 16, y: 8, width: header.bounds.width - 32, height: 46)
+        searchButton.autoresizingMask = [.flexibleWidth]
+        header.addSubview(searchButton)
+        tableView.tableHeaderView = header
+    }
+
+    @objc private func openSearch() {
+        navigationController?.pushViewController(SearchViewController(style: .plain), animated: true)
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
