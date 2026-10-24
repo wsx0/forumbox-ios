@@ -36,6 +36,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         super.init(nibName: nil, bundle: nil)
     }
 
+    convenience init(title: String, urlString: String) {
+        self.init(site: Site(name: title, note: "", url: urlString, searchURL: nil))
+    }
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -178,7 +182,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     // MARK: - UA
 
     private func applyUserAgent() {
-        webView.customUserAgent = desktopUA ? Self.desktopUserAgent : Self.safariUserAgent
+        webView.customUserAgent = desktopUA ? UserAgents.desktopChrome : UserAgents.mobileSafari
     }
 
     private func toggleDesktopUA() {
@@ -346,8 +350,4 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     }
 
     // MARK: - 常量
-
-    private static let safariUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
-
-    private static let desktopUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 }
