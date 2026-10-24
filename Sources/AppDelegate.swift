@@ -10,9 +10,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.tintColor = Theme.accent
-        let root = SitesViewController(style: .plain)
-        let nav = UINavigationController(rootViewController: root)
-        window.rootViewController = nav
+        window.rootViewController = MainTabBarController.make()
         window.makeKeyAndVisible()
         self.window = window
         return true
