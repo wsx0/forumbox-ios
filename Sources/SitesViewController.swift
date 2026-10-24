@@ -69,7 +69,7 @@ final class SitesViewController: UITableViewController {
     // MARK: - 导航动作
 
     @objc private func openSearch() {
-        navigationController?.pushViewController(SearchViewController(style: .plain), animated: true)
+        navigationController?.pushViewController(SearchViewController(), animated: true)
     }
 
     @objc private func addSite() {

@@ -16,7 +16,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
     static func make() -> MainTabBarController {
         let tab = MainTabBarController(nibName: nil, bundle: nil)
 
-        let digestNav = UINavigationController(rootViewController: DigestViewController(style: .plain))
+        let digestNav = UINavigationController(rootViewController: DigestViewController())
         digestNav.tabBarItem = UITabBarItem(title: "精华",
                                             image: TabIcon.image("sparkles"),
                                             selectedImage: TabIcon.image("sparkles"))
