@@ -42,7 +42,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor(red: 11/255, green: 18/255, blue: 32/255, alpha: 1)
+        view.backgroundColor = Theme.bgTop
         title = site.name
         navigationItem.rightBarButtonItem = moreButton
 
@@ -96,7 +96,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     private func buildLayout() {
         progressView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.progressTintColor = UIColor(red: 56/255, green: 189/255, blue: 248/255, alpha: 1)
+        progressView.progressTintColor = Theme.accent
         progressView.trackTintColor = .clear
         progressView.isHidden = true
         view.addSubview(progressView)
@@ -104,8 +104,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         let toolbar = UIToolbar()
         toolbar.translatesAutoresizingMaskIntoConstraints = false
         toolbar.isTranslucent = false
-        toolbar.barTintColor = UIColor(red: 11/255, green: 18/255, blue: 32/255, alpha: 1)
-        toolbar.tintColor = UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1)
+        toolbar.barTintColor = Theme.navBg
+        toolbar.tintColor = Theme.textDim
         let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         toolbar.items = [backButton, flex, forwardButton, flex, reloadButton, flex, safariButton]
         view.addSubview(toolbar)
