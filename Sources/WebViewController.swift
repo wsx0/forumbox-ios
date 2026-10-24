@@ -74,12 +74,12 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
         let ucc = config.userContentController
         // 屏蔽 JS 弹窗（window.open）
-        ucc.addUserScript(WKUserScript(source: Self.popupSuppressorJS,
+        ucc.addUserScript(WKUserScript(source: WebScripts.popupSuppressor,
                                        injectionTime: .atDocumentStart,
                                        forMainFrameOnly: false))
         // 聚合搜索：跳到站内搜索页后，自动填写关键词并提交
         if searchQuery != nil {
-            ucc.addUserScript(WKUserScript(source: Self.autoSearchJS,
+            ucc.addUserScript(WKUserScript(source: WebScripts.autoSearch,
                                            injectionTime: .atDocumentEnd,
                                            forMainFrameOnly: true))
         }
@@ -346,48 +346,6 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     }
 
     // MARK: - 常量
-
-    private static let popupSuppressorJS = """
-    (function () {
-        try {
-            window.open = function () { return null; };
-        } catch (e) {}
-    })();
-    """
-
-    private static let autoSearchJS = """
-    (function () {
-        try {
-            var hash = location.hash || '';
-            var idx = hash.indexOf('fbq=');
-            if (idx < 0) return;
-            var raw = hash.substring(idx + 4);
-            var q = '';
-            try { q = decodeURIComponent(raw); } catch (e) { q = raw; }
-            if (!q) return;
-            var inputs = document.querySelectorAll('input[type="text"], input[type="search"], input:not([type])');
-            var target = null;
-            for (var i = 0; i < inputs.length; i++) {
-                var inp = inputs[i];
-                var name = (inp.name || '') + ' ' + (inp.id || '') + ' ' + (inp.placeholder || '');
-                if (/srchtxt|keyword|search|搜索/i.test(name)) { target = inp; break; }
-            }
-            if (!target) return;
-            target.value = q;
-            target.dispatchEvent(new Event('input', { bubbles: true }));
-            target.dispatchEvent(new Event('change', { bubbles: true }));
-            var form = target.form;
-            if (form) {
-                var btn = form.querySelector('button[type="submit"], input[type="submit"], button');
-                if (btn) { btn.click(); return; }
-                form.submit();
-                return;
-            }
-            var ev = new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, which: 13, bubbles: true });
-            target.dispatchEvent(ev);
-        } catch (e) {}
-    })();
-    """
 
     private static let safariUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
 
