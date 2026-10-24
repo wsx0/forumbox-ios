@@ -1,0 +1,1118 @@
+[
+  {
+    "trigger": {
+      "url-filter": "doubleclick\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "googlesyndication\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "googleadservices\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "google-analytics\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "googletagmanager\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "googletagservices\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adnxs\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "rubiconproject\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "pubmatic\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "openx\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "casalemedia\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "smartadserver\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adform\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adsrvr\\.org",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "bidswitch\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "contextweb\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "sharethrough\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "teads\\.tv",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "spotxchange\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "spotx\\.tv",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "criteo\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "criteo\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "taboola\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "outbrain\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "mgid\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "revcontent\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adcash\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "propellerads\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "propellerclick\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adsterra\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "hilltopads\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "hilltopads\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "clickadu\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "popads\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "popcash\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "popmyads\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adspyglass\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "clickaine\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "ad-maven\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "trafficfactory\\.biz",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "trafficfactory\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "exoclick\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "exosrv\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "realsrv\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "juicyads\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "juicyads\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "trafficjunky\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "trafficjunky\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "trafficstars\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "tsyndicate\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "ero-advertising\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adnium\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "push-notifications\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "hm\\.baidu\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "cnzz\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "umeng\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "growingio\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "umtrack\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "appsflyer\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adjust\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "branch\\.io",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "onesignal\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  }
+]
