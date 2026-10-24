@@ -4,6 +4,7 @@ import WebKit
 final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
     private let site: Site
+    private let searchQuery: String?
     private var webView: WKWebView!
     private var contentController: WKUserContentController!
     private let progressView = UIProgressView(progressViewStyle: .bar)
@@ -29,8 +30,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         set { UserDefaults.standard.set(newValue, forKey: "fb_desktop_ua") }
     }
 
-    init(site: Site) {
+    init(site: Site, searchQuery: String? = nil) {
         self.site = site
+        self.searchQuery = searchQuery
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -75,6 +77,12 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         ucc.addUserScript(WKUserScript(source: Self.popupSuppressorJS,
                                        injectionTime: .atDocumentStart,
                                        forMainFrameOnly: false))
+        // 聚合搜索：跳到站内搜索页后，自动填写关键词并提交
+        if searchQuery != nil {
+            ucc.addUserScript(WKUserScript(source: Self.autoSearchJS,
+                                           injectionTime: .atDocumentEnd,
+                                           forMainFrameOnly: true))
+        }
         contentController = ucc
 
         let webView = WKWebView(frame: .zero, configuration: config)
@@ -252,7 +260,15 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     // MARK: - 导航
 
     private func load() {
-        guard let url = URL(string: site.url) else { return }
+        var target = site.url
+        if searchQuery != nil, let searchURL = site.searchURL, !searchURL.isEmpty {
+            target = searchURL
+        }
+        guard var url = URL(string: target) else { return }
+        if let q = searchQuery, site.searchURL != nil,
+           let encoded = q.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
+            url = URL(string: target + "#fbq=" + encoded) ?? url
+        }
         isReaderMode = false
         webView.load(URLRequest(url: url))
     }
@@ -335,6 +351,40 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     (function () {
         try {
             window.open = function () { return null; };
+        } catch (e) {}
+    })();
+    """
+
+    private static let autoSearchJS = """
+    (function () {
+        try {
+            var hash = location.hash || '';
+            var idx = hash.indexOf('fbq=');
+            if (idx < 0) return;
+            var raw = hash.substring(idx + 4);
+            var q = '';
+            try { q = decodeURIComponent(raw); } catch (e) { q = raw; }
+            if (!q) return;
+            var inputs = document.querySelectorAll('input[type="text"], input[type="search"], input:not([type])');
+            var target = null;
+            for (var i = 0; i < inputs.length; i++) {
+                var inp = inputs[i];
+                var name = (inp.name || '') + ' ' + (inp.id || '') + ' ' + (inp.placeholder || '');
+                if (/srchtxt|keyword|search|搜索/i.test(name)) { target = inp; break; }
+            }
+            if (!target) return;
+            target.value = q;
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+            target.dispatchEvent(new Event('change', { bubbles: true }));
+            var form = target.form;
+            if (form) {
+                var btn = form.querySelector('button[type="submit"], input[type="submit"], button');
+                if (btn) { btn.click(); return; }
+                form.submit();
+                return;
+            }
+            var ev = new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, which: 13, bubbles: true });
+            target.dispatchEvent(ev);
         } catch (e) {}
     })();
     """
