@@ -1,14 +1,17 @@
 import UIKit
 
-/// 精华 / 搜索结果用的紧凑帖子行
+/// 精华 / 搜索结果用的紧凑帖子行（带缩略图，无图时显示 emoji）
 final class ThreadCell: UITableViewCell {
 
     private let container = UIView()
-    private let emojiBackground = UIView()
+    private let mediaContainer = UIView()
+    private let thumbView = UIImageView()
     private let emojiLabel = UILabel()
     private let titleLabel = UILabel()
     private let metaLabel = UILabel()
     private let chevronLabel = UILabel()
+
+    private var loadToken = 0
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -23,15 +26,21 @@ final class ThreadCell: UITableViewCell {
         container.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(container)
 
-        emojiBackground.backgroundColor = Theme.emojiBg
-        emojiBackground.layer.cornerRadius = 8
-        emojiBackground.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(emojiBackground)
+        mediaContainer.backgroundColor = Theme.emojiBg
+        mediaContainer.layer.cornerRadius = 10
+        mediaContainer.layer.masksToBounds = true
+        mediaContainer.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(mediaContainer)
 
-        emojiLabel.font = .systemFont(ofSize: 16)
+        thumbView.contentMode = .scaleAspectFill
+        thumbView.clipsToBounds = true
+        thumbView.translatesAutoresizingMaskIntoConstraints = false
+        mediaContainer.addSubview(thumbView)
+
+        emojiLabel.font = .systemFont(ofSize: 22)
         emojiLabel.textAlignment = .center
         emojiLabel.translatesAutoresizingMaskIntoConstraints = false
-        emojiBackground.addSubview(emojiLabel)
+        mediaContainer.addSubview(emojiLabel)
 
         titleLabel.font = Theme.rounded(14.5, .semibold)
         titleLabel.textColor = Theme.text
@@ -57,19 +66,24 @@ final class ThreadCell: UITableViewCell {
             container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: Design.cardSpacing / 2),
             container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -Design.cardSpacing / 2),
 
-            emojiBackground.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
-            emojiBackground.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
-            emojiBackground.widthAnchor.constraint(equalToConstant: 30),
-            emojiBackground.heightAnchor.constraint(equalToConstant: 30),
+            mediaContainer.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 10),
+            mediaContainer.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            mediaContainer.widthAnchor.constraint(equalToConstant: 52),
+            mediaContainer.heightAnchor.constraint(equalToConstant: 52),
 
-            emojiLabel.centerXAnchor.constraint(equalTo: emojiBackground.centerXAnchor),
-            emojiLabel.centerYAnchor.constraint(equalTo: emojiBackground.centerYAnchor),
+            thumbView.topAnchor.constraint(equalTo: mediaContainer.topAnchor),
+            thumbView.bottomAnchor.constraint(equalTo: mediaContainer.bottomAnchor),
+            thumbView.leadingAnchor.constraint(equalTo: mediaContainer.leadingAnchor),
+            thumbView.trailingAnchor.constraint(equalTo: mediaContainer.trailingAnchor),
+
+            emojiLabel.centerXAnchor.constraint(equalTo: mediaContainer.centerXAnchor),
+            emojiLabel.centerYAnchor.constraint(equalTo: mediaContainer.centerYAnchor),
 
             chevronLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -10),
             chevronLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
             chevronLabel.widthAnchor.constraint(equalToConstant: 10),
 
-            titleLabel.leadingAnchor.constraint(equalTo: emojiBackground.trailingAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: mediaContainer.trailingAnchor, constant: 10),
             titleLabel.trailingAnchor.constraint(equalTo: chevronLabel.leadingAnchor, constant: -6),
             titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 11),
 
@@ -84,10 +98,43 @@ final class ThreadCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(emoji: String, title: String, meta: String) {
+    func configure(emoji: String,
+                   title: String,
+                   meta: String,
+                   thumbURL: String?,
+                   referer: String?) {
+        loadToken += 1
+        let token = loadToken
+
         emojiLabel.text = emoji
         titleLabel.text = title
         metaLabel.text = meta
+
+        if let thumbURL = thumbURL, !thumbURL.isEmpty {
+            thumbView.isHidden = false
+            emojiLabel.isHidden = true
+            thumbView.image = nil
+            ImageLoader.shared.load(thumbURL, referer: referer) { [weak self] image in
+                guard let self = self, self.loadToken == token else { return }
+                if let image = image {
+                    self.thumbView.image = image
+                } else {
+                    self.thumbView.isHidden = true
+                    self.emojiLabel.isHidden = false
+                }
+            }
+        } else {
+            thumbView.isHidden = true
+            emojiLabel.isHidden = false
+        }
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        loadToken += 1
+        thumbView.image = nil
+        thumbView.isHidden = true
+        emojiLabel.isHidden = false
     }
 
     override func setHighlighted(_ highlighted: Bool, animated: Bool) {

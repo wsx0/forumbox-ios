@@ -6,7 +6,7 @@ final class SearchAggregator {
     struct SiteResult {
         let site: Site
         var status: String
-        var items: [(title: String, url: String)]
+        var items: [ThreadItem]
     }
 
     private let engine = SiteFetchAggregator()
@@ -29,7 +29,7 @@ final class SearchAggregator {
                      update: { result in
                         update(SiteResult(site: result.site,
                                           status: result.status,
-                                          items: result.items.map { ($0.title, $0.url) }))
+                                          items: result.items))
                      },
                      finished: finished)
     }

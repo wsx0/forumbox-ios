@@ -4,6 +4,13 @@ import WebKit
 struct ThreadItem {
     let title: String
     let url: String
+    var thumbURL: String?
+
+    init(title: String, url: String, thumbURL: String? = nil) {
+        self.title = title
+        self.url = url
+        self.thumbURL = thumbURL
+    }
 }
 
 struct SiteThreadResult {
@@ -126,7 +133,10 @@ final class ThreadFetchTask: NSObject, WKNavigationDelegate {
                     if let title = obj["title"] as? String,
                        let url = obj["url"] as? String,
                        !url.isEmpty {
-                        items.append(ThreadItem(title: title, url: url))
+                        let thumb = obj["thumb"] as? String
+                        items.append(ThreadItem(title: title,
+                                                url: url,
+                                                thumbURL: (thumb?.isEmpty == false) ? thumb : nil))
                     }
                 }
             }

@@ -210,7 +210,11 @@ final class DigestViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ThreadCell", for: indexPath) as! ThreadCell
         let entry = filteredEntries[indexPath.row]
-        cell.configure(emoji: entry.site.emoji, title: entry.item.title, meta: entry.site.name)
+        cell.configure(emoji: entry.site.emoji,
+                       title: entry.item.title,
+                       meta: entry.site.name,
+                       thumbURL: entry.item.thumbURL,
+                       referer: entry.site.url)
         return cell
     }
 

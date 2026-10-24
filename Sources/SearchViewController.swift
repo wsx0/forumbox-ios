@@ -220,7 +220,7 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
         let siteResults = results.map { result in
             SiteThreadResult(site: result.site,
                              status: result.status,
-                             items: result.items.map { ThreadItem(title: $0.title, url: $0.url) })
+                             items: result.items)
         }
         entries = interleavedEntries(siteResults)
     }
@@ -315,7 +315,11 @@ final class SearchViewController: UITableViewController, UISearchBarDelegate {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ThreadCell", for: indexPath) as! ThreadCell
         let entry = filteredEntries[indexPath.row]
-        cell.configure(emoji: entry.site.emoji, title: entry.item.title, meta: entry.site.name)
+        cell.configure(emoji: entry.site.emoji,
+                       title: entry.item.title,
+                       meta: entry.site.name,
+                       thumbURL: entry.item.thumbURL,
+                       referer: entry.site.url)
         return cell
     }
 
