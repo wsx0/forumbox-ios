@@ -6,7 +6,7 @@ extension Notification.Name {
     static let sitesChanged = Notification.Name("fb.sitesChanged")
 }
 
-/// 精华 / 搜索共用的数据整理逻辑
+/// 搜索共用的数据整理逻辑
 enum FeedPipeline {
 
     /// 各站结果交错合并（每个站轮流取一条），避免全挤在同一个站

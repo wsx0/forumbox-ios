@@ -1,6 +1,6 @@
 import UIKit
 
-/// 精华 / 搜索共用的两列网格基类
+/// 搜索共用的两列网格基类
 class ThreadGridViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate {
 
     let collectionView: UICollectionView

@@ -84,15 +84,15 @@ final class SitesViewController: UITableViewController {
                                       message: nil,
                                       preferredStyle: .alert)
         let placeholders = ["名称（必填）", "网址（必填，http/https）", "备注（可空）",
-                            "Emoji（可空）", "搜索页地址（可空）", "精华页地址（可空）"]
+                            "Emoji（可空）", "搜索页地址（可空）"]
         let values: [String?] = [site?.name, site?.url, site?.note, site?.emoji,
-                                 site?.searchURL, site?.digestURL]
-        for i in 0..<6 {
+                                 site?.searchURL]
+        for i in 0..<5 {
             alert.addTextField { field in
                 field.placeholder = placeholders[i]
                 field.text = values[i]
                 field.clearButtonMode = .whileEditing
-                if i == 1 || i == 4 || i == 5 {
+                if i == 1 || i == 4 {
                     field.keyboardType = .URL
                     field.autocapitalizationType = .none
                     field.autocorrectionType = .no
@@ -101,23 +101,22 @@ final class SitesViewController: UITableViewController {
         }
         alert.addAction(UIAlertAction(title: "取消", style: .cancel))
         alert.addAction(UIAlertAction(title: "保存", style: .default) { [weak self, weak alert] _ in
-            guard let self = self, let fields = alert?.textFields, fields.count == 6 else { return }
+            guard let self = self, let fields = alert?.textFields, fields.count == 5 else { return }
             let name = (fields[0].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let url = (fields[1].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let note = (fields[2].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let emoji = (fields[3].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let search = (fields[4].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            let digest = (fields[5].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 
             let lower = url.lowercased()
             guard !name.isEmpty, lower.hasPrefix("http://") || lower.hasPrefix("https://") else {
                 self.presentNotice("名称和网址必填，网址需要以 http:// 或 https:// 开头")
                 return
             }
-            for extra in [search, digest] where !extra.isEmpty {
-                let lowerExtra = extra.lowercased()
-                guard lowerExtra.hasPrefix("http://") || lowerExtra.hasPrefix("https://") else {
-                    self.presentNotice("搜索页 / 精华页地址需要以 http:// 或 https:// 开头，或留空")
+            if !search.isEmpty {
+                let lowerSearch = search.lowercased()
+                guard lowerSearch.hasPrefix("http://") || lowerSearch.hasPrefix("https://") else {
+                    self.presentNotice("搜索页地址需要以 http:// 或 https:// 开头，或留空")
                     return
                 }
             }
@@ -125,7 +124,6 @@ final class SitesViewController: UITableViewController {
                                note: note,
                                url: url,
                                searchURL: search.isEmpty ? nil : search,
-                               digestURL: digest.isEmpty ? nil : digest,
                                emoji: emoji.isEmpty ? "🌐" : emoji)
             if let index = index {
                 SiteStore.shared.replace(at: index, with: newSite)

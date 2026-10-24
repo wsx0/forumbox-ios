@@ -1,6 +1,6 @@
 import UIKit
 
-/// 网格卡片（精华 / 搜索共用）：缩略图 + 标题 + 站点
+/// 网格卡片（搜索共用）：缩略图 + 标题 + 站点
 final class ThreadGridCell: UICollectionViewCell {
 
     static let reuseID = "ThreadGridCell"

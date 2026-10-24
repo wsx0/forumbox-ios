@@ -1,6 +1,6 @@
 import UIKit
 
-/// 底部两个 Tab：精华 / 论坛
+/// 底部两个 Tab：论坛 / 收藏
 final class MainTabBarController: UITabBarController, UITabBarControllerDelegate {
 
     private let lastTabKey = "fb_last_tab"
@@ -23,11 +23,6 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
     static func make() -> MainTabBarController {
         let tab = MainTabBarController(nibName: nil, bundle: nil)
 
-        let digestNav = UINavigationController(rootViewController: DigestViewController())
-        digestNav.tabBarItem = UITabBarItem(title: "精华",
-                                            image: TabIcon.image("sparkles"),
-                                            selectedImage: TabIcon.image("sparkles"))
-
         let sitesNav = UINavigationController(rootViewController: SitesViewController(style: .plain))
         sitesNav.tabBarItem = UITabBarItem(title: "论坛",
                                            image: TabIcon.image("text.bubble"),
@@ -38,7 +33,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
                                               image: TabIcon.image("star"),
                                               selectedImage: TabIcon.image("star.fill"))
 
-        tab.viewControllers = [digestNav, sitesNav, favoriteNav]
+        tab.viewControllers = [sitesNav, favoriteNav]
         return tab
     }
 
@@ -47,7 +42,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
         delegate = self
         tabBar.itemPositioning = .fill
         let saved = UserDefaults.standard.integer(forKey: lastTabKey)
-        selectedIndex = min(max(saved, 0), 2)
+        selectedIndex = min(max(saved, 0), 1)
         updateFavoriteBadge()
         favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
                                                                   object: nil,

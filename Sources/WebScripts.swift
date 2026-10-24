@@ -47,7 +47,7 @@ enum WebScripts {
     })();
     """
 
-    /// 从搜索结果页 / 精华页提取「帖子链接 + 标题 + 缩略图」，返回 JSON 字符串
+    /// 从搜索结果页提取「帖子链接 + 标题 + 缩略图」，返回 JSON 字符串
     static let extractResults = """
     (function () {
         try {

@@ -26,7 +26,7 @@ struct FeedEntry {
 }
 
 
-/// 后台静默抓取一个页面里的帖子链接（搜索页 / 精华页通用）
+/// 后台静默抓取一个页面里的帖子链接（搜索页通用）
 final class ThreadFetchTask: NSObject, WKNavigationDelegate {
 
     private let requestURL: String
