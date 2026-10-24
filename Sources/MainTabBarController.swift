@@ -26,7 +26,12 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
                                            image: UIImage(systemName: "list.bullet"),
                                            selectedImage: UIImage(systemName: "list.bullet"))
 
-        tab.viewControllers = [digestNav, sitesNav]
+        let favoriteNav = UINavigationController(rootViewController: FavoritesViewController(style: .plain))
+        favoriteNav.tabBarItem = UITabBarItem(title: "收藏",
+                                              image: UIImage(systemName: "star"),
+                                              selectedImage: UIImage(systemName: "star.fill"))
+
+        tab.viewControllers = [digestNav, sitesNav, favoriteNav]
         return tab
     }
 
@@ -34,7 +39,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
         super.viewDidLoad()
         delegate = self
         let saved = UserDefaults.standard.integer(forKey: lastTabKey)
-        selectedIndex = (saved == 1) ? 1 : 0
+        selectedIndex = min(max(saved, 0), 2)
     }
 
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
