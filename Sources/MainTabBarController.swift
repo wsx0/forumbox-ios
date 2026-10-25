@@ -1,9 +1,9 @@
 import UIKit
 
-/// 底部三个 Tab：论坛 / 收藏 / 设置
+/// 底部四个 Tab：论坛 / 视频 / 收藏 / 设置
 final class MainTabBarController: UITabBarController, UITabBarControllerDelegate {
 
-    private let lastTabKey = "fb_last_tab"
+    private let lastTabKey = "fb_last_tab_v3"
     private var favoritesObserver: NSObjectProtocol?
 
     deinit {
@@ -28,6 +28,11 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
                                            image: TabIcon.image("text.bubble"),
                                            selectedImage: TabIcon.image("text.bubble"))
 
+        let videoNav = UINavigationController(rootViewController: VideoViewController(style: .insetGrouped))
+        videoNav.tabBarItem = UITabBarItem(title: "视频",
+                                           image: TabIcon.image("play.rectangle"),
+                                           selectedImage: TabIcon.image("play.rectangle.fill"))
+
         let favoriteNav = UINavigationController(rootViewController: FavoritesViewController(style: .insetGrouped))
         favoriteNav.tabBarItem = UITabBarItem(title: "收藏",
                                               image: TabIcon.image("star"),
@@ -38,7 +43,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
                                               image: TabIcon.image("gearshape"),
                                               selectedImage: TabIcon.image("gearshape.fill"))
 
-        tab.viewControllers = [sitesNav, favoriteNav, settingsNav]
+        tab.viewControllers = [sitesNav, videoNav, favoriteNav, settingsNav]
         return tab
     }
 
@@ -47,7 +52,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
         delegate = self
         tabBar.itemPositioning = .fill
         let saved = UserDefaults.standard.integer(forKey: lastTabKey)
-        selectedIndex = min(max(saved, 0), 2)
+        selectedIndex = min(max(saved, 0), 3)
         updateFavoriteBadge()
         favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
                                                                   object: nil,
@@ -58,7 +63,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
 
     private func updateFavoriteBadge() {
         let count = FavoriteStore.shared.items.count
-        viewControllers?[1].tabBarItem.badgeValue = count > 0 ? "\(count)" : nil
+        viewControllers?[2].tabBarItem.badgeValue = count > 0 ? "\(count)" : nil
     }
 
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {

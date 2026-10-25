@@ -4,6 +4,8 @@ import WebKit
 final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
 
     private let site: Site
+    private let videoMode: Bool
+    var onTitleChange: ((String) -> Void)?
     private var webView: WKWebView!
     private var contentController: WKUserContentController!
     private let progressView = UIProgressView(progressViewStyle: .bar)
@@ -50,14 +52,15 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         set { UserDefaults.standard.set(newValue, forKey: "fb_desktop_ua") }
     }
 
-    init(site: Site) {
+    init(site: Site, videoMode: Bool = false) {
         self.site = site
+        self.videoMode = videoMode
         super.init(nibName: nil, bundle: nil)
         hidesBottomBarWhenPushed = true
     }
 
-    convenience init(title: String, urlString: String) {
-        self.init(site: Site(name: title, note: "", url: urlString))
+    convenience init(title: String, urlString: String, videoMode: Bool = false) {
+        self.init(site: Site(name: title, note: "", url: urlString), videoMode: videoMode)
     }
 
     required init?(coder: NSCoder) {
@@ -126,17 +129,24 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         config.websiteDataStore = .default()   // 持久化 Cookie，登录态保留
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
+        config.allowsPictureInPictureMediaPlayback = true
+        config.allowsAirPlayForMediaPlayback = true
+        if #available(iOS 15.4, *) {
+            config.preferences.isElementFullscreenEnabled = true
+        }
 
         let ucc = config.userContentController
         // 屏蔽 JS 弹窗（window.open）
         ucc.addUserScript(WKUserScript(source: WebScripts.popupSuppressor,
                                        injectionTime: .atDocumentStart,
                                        forMainFrameOnly: false))
-        // ED2K 链接识别 + 悬浮「转存 115」按钮
-        ucc.add(WeakScriptHandler(delegate: self), name: "ed2k")
-        ucc.addUserScript(WKUserScript(source: WebScripts.ed2kScanner,
-                                       injectionTime: .atDocumentEnd,
-                                       forMainFrameOnly: true))
+        // ED2K 链接识别 + 悬浮「转存 115」按钮（视频模式不需要）
+        if !videoMode {
+            ucc.add(WeakScriptHandler(delegate: self), name: "ed2k")
+            ucc.addUserScript(WKUserScript(source: WebScripts.ed2kScanner,
+                                           injectionTime: .atDocumentEnd,
+                                           forMainFrameOnly: true))
+        }
         contentController = ucc
 
         let webView = WKWebView(frame: .zero, configuration: config)
@@ -631,6 +641,12 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         webView.scrollView.refreshControl?.endRefreshing()
         updateFavoriteButton()
         hideLoadingOverlay()
+        if videoMode,
+           let pageTitle = webView.title?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !pageTitle.isEmpty {
+            title = pageTitle
+            onTitleChange?(pageTitle)
+        }
         if !hasFadedInContent {
             hasFadedInContent = true
             UIView.animate(withDuration: 0.25) {
