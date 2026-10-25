@@ -23,7 +23,10 @@ final class Cloud115 {
     func addED2K(_ link: String, completion: @escaping (Result<Void, Cloud115Error>) -> Void) {
         WKWebsiteDataStore.default().httpCookieStore.getAllCookies { [weak self] cookies in
             guard let self = self else { return }
-            let matched = cookies.filter { $0.domain.contains("115.com") }
+            let matched = cookies.filter { cookie in
+                let domain = cookie.domain.hasPrefix(".") ? String(cookie.domain.dropFirst()) : cookie.domain
+                return domain == "115.com" || domain.hasSuffix(".115.com")
+            }
             let header = matched.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
             guard !header.isEmpty else {
                 DispatchQueue.main.async { completion(.failure(.notLoggedIn)) }

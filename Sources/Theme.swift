@@ -233,7 +233,7 @@ enum Theme {
         if palette.key == "southPlusDark" {
             return UIColor(red: 35/255, green: 36/255, blue: 42/255, alpha: 1)
         }
-        return palette.card
+        return palette.emojiBg
     }
 
     /// 主题亮色下的状态栏 / 键盘样式
@@ -340,10 +340,10 @@ enum Theme {
         let itemAppearance = UITabBarItemAppearance()
         itemAppearance.normal.iconColor = palette.textFaint
         itemAppearance.normal.titleTextAttributes = [.foregroundColor: palette.textDim,
-                                                     .font: rounded(12, .medium)]
+                                                     .font: UIFont.systemFont(ofSize: 12, weight: .medium)]
         itemAppearance.selected.iconColor = palette.accent
         itemAppearance.selected.titleTextAttributes = [.foregroundColor: palette.accent,
-                                                       .font: rounded(12, .semibold)]
+                                                       .font: UIFont.systemFont(ofSize: 12, weight: .semibold)]
         let tabAppearance = UITabBarAppearance()
         tabAppearance.configureWithOpaqueBackground()
         tabAppearance.backgroundColor = palette.isLight ? palette.card : palette.navBg

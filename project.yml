@@ -9,8 +9,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "3.3.0"
-    CURRENT_PROJECT_VERSION: "27"
+    MARKETING_VERSION: "3.3.1"
+    CURRENT_PROJECT_VERSION: "28"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     SUPPORTS_MACCATALYST: "NO"
 
@@ -51,6 +51,7 @@ targets:
           - UIInterfaceOrientationPortrait
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+        NSPhotoLibraryUsageDescription: "选择一张图片作为 App 背景"
         ITSAppUsesNonExemptEncryption: false
 
 schemes:

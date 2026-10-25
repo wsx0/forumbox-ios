@@ -2,14 +2,6 @@ import UIKit
 
 /// 主题选择器（论坛页 / 收藏页 共用）
 enum ThemePicker {
-
-    static func makeButton(target: Any, action: Selector) -> UIBarButtonItem {
-        return UIBarButtonItem(image: UIImage(systemName: "paintpalette"),
-                               style: .plain,
-                               target: target,
-                               action: action)
-    }
-
     static func present(from viewController: UIViewController, sourceItem: UIBarButtonItem) {
         let sheet = makeSheet(from: viewController)
         if let pop = sheet.popoverPresentationController {

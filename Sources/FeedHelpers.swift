@@ -17,12 +17,6 @@ extension UIViewController {
 
 /// URL 展示（去掉协议头）
 extension String {
-    var shortURL: String {
-        if hasPrefix("https://") { return String(dropFirst(8)) }
-        if hasPrefix("http://") { return String(dropFirst(7)) }
-        return self
-    }
-
     /// 列表头像用的首字（跳过【】括号等符号）
     var identityInitial: String {
         let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)

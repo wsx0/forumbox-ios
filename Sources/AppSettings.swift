@@ -28,6 +28,9 @@ enum AppFontChoice: String, CaseIterable {
         case .system:
             return UIFont.systemFont(ofSize: size, weight: weight)
         case .rounded:
+            if let font = UIFont(name: "Yuanti SC", size: size) {
+                return font
+            }
             let base = UIFont.systemFont(ofSize: size, weight: weight)
             if let descriptor = base.fontDescriptor.withDesign(.rounded) {
                 return UIFont(descriptor: descriptor, size: size)
@@ -56,6 +59,8 @@ final class AppSettings {
     private let fontChoiceKey = "fb_font_choice"
     private let fontScaleKey = "fb_font_scale"
     private let backgroundFileName = "fb_background.jpg"
+    private var cachedBackground: UIImage?
+    private var didLoadBackground = false
 
     private init() {}
 
@@ -100,8 +105,12 @@ final class AppSettings {
     }
 
     var backgroundImage: UIImage? {
-        guard hasBackground else { return nil }
-        return UIImage(contentsOfFile: backgroundURL.path)
+        if didLoadBackground {
+            return cachedBackground
+        }
+        didLoadBackground = true
+        cachedBackground = hasBackground ? UIImage(contentsOfFile: backgroundURL.path) : nil
+        return cachedBackground
     }
 
     func saveBackground(_ image: UIImage) {
@@ -115,9 +124,13 @@ final class AppSettings {
         }
         guard let data = resized.jpegData(compressionQuality: 0.86) else { return }
         try? data.write(to: backgroundURL, options: .atomic)
+        cachedBackground = resized
+        didLoadBackground = true
     }
 
     func clearBackground() {
         try? FileManager.default.removeItem(at: backgroundURL)
+        cachedBackground = nil
+        didLoadBackground = true
     }
 }
