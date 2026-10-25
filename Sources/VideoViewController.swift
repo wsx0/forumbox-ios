@@ -42,10 +42,15 @@ final class VideoViewController: UIViewController,
         return view
     }()
 
-    private let sites = VideoSites.all
+    private var sites: [VideoSite] = []
+    private let emptyLabel = UILabel()
+    private var videoSitesObserver: NSObjectProtocol?
 
     deinit {
         if let observer = videoFavoritesObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = videoSitesObserver {
             NotificationCenter.default.removeObserver(observer)
         }
     }
@@ -54,8 +59,14 @@ final class VideoViewController: UIViewController,
         super.viewDidLoad()
         CrashLogger.log("video tab loaded")
         view.backgroundColor = Theme.bgTop
+        sites = VideoSiteStore.shared.sites
         setupHeader()
         setupGrid()
+        videoSitesObserver = NotificationCenter.default.addObserver(forName: .videoSitesChanged,
+                                                                   object: nil,
+                                                                   queue: .main) { [weak self] _ in
+            self?.reloadSites()
+        }
         videoFavoritesObserver = NotificationCenter.default.addObserver(forName: .videoFavoritesChanged,
                                                                        object: nil,
                                                                        queue: .main) { [weak self] _ in
@@ -68,7 +79,7 @@ final class VideoViewController: UIViewController,
         super.viewWillAppear(animated)
         CrashLogger.log("video tab will appear")
         navigationController?.setNavigationBarHidden(true, animated: animated)
-        collectionView.reloadData()
+        reloadSites()
         updateFavoritesButton()
     }
 
@@ -212,12 +223,32 @@ final class VideoViewController: UIViewController,
         view.addSubview(collectionView)
         collectionView.backgroundView = Theme.makeBackgroundView(collectionView.bounds)
 
+        emptyLabel.text = "还没有视频站点\n到 设置 → 视频站点 添加"
+        emptyLabel.numberOfLines = 0
+        emptyLabel.textAlignment = .center
+        emptyLabel.textColor = Theme.textDim
+        emptyLabel.font = Theme.font(13, .regular)
+        emptyLabel.isHidden = true
+        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(emptyLabel)
+
         NSLayoutConstraint.activate([
             collectionView.topAnchor.constraint(equalTo: header.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyLabel.centerYAnchor.constraint(equalTo: collectionView.centerYAnchor),
+            emptyLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 32),
+            emptyLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -32)
         ])
+    }
+
+    private func reloadSites() {
+        sites = VideoSiteStore.shared.sites
+        collectionView.reloadData()
+        emptyLabel.isHidden = !sites.isEmpty
     }
 
     // MARK: - 链接
@@ -268,6 +299,10 @@ final class VideoViewController: UIViewController,
     @objc private func openFavorites() {
         Haptics.tap()
         CrashLogger.log("open favorites tab")
+        if let nav = tabBarController?.viewControllers?[2] as? UINavigationController,
+           let favorites = nav.viewControllers.first as? FavoritesViewController {
+            favorites.showVideos()
+        }
         tabBarController?.selectedIndex = 2
     }
 

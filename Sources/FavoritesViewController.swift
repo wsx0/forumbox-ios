@@ -1,14 +1,23 @@
 import UIKit
 
-/// 收藏 Tab：视频收藏 + 论坛收藏夹，分区展示
+/// 收藏 Tab：视频收藏 / 论坛收藏夹 分段切换
 final class FavoritesViewController: UITableViewController, ScrollToTopable {
+
+    private enum Segment: Int {
+        case videos = 0
+        case forums = 1
+    }
+
+    private static let segmentKey = "fb_favorites_segment"
 
     private lazy var addFolderButton = makeHeaderIconButton(systemName: "plus",
                                                             action: #selector(addFolder))
 
     private let headerTitleLabel = UILabel()
     private let headerSubtitleLabel = UILabel()
+    private let segmented = UISegmentedControl(items: ["视频收藏", "论坛收藏夹"])
 
+    private var segment: Segment = .videos
     private var videos: [VideoFavorite] = []
     private var folders: [FavoriteFolder] = []
     private var favoritesObserver: NSObjectProtocol?
@@ -31,7 +40,7 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
         tableView.separatorColor = Theme.cardBorder
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 124, bottom: 0, right: 16)
         tableView.rowHeight = 68 * AppSettings.shared.fontScale
-        tableView.sectionHeaderTopPadding = 12
+        tableView.sectionHeaderTopPadding = 8
         tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
         tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
         tableView.register(VideoFavoriteRowCell.self,
@@ -43,8 +52,15 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
         navigationItem.leftBarButtonItem = nil
         navigationItem.rightBarButtonItems = nil
         navigationController?.navigationBar.prefersLargeTitles = false
+
+        if let raw = UserDefaults.standard.object(forKey: Self.segmentKey) as? Int,
+           let saved = Segment(rawValue: raw) {
+            segment = saved
+        } else {
+            segment = VideoFavoriteStore.shared.items.isEmpty ? .forums : .videos
+        }
+
         setupHeader()
-        addFolderButton.accessibilityLabel = "新建收藏夹"
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
 
         favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
@@ -91,6 +107,16 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
         tableView.setContentOffset(CGPoint(x: 0, y: top), animated: true)
     }
 
+    /// 从视频页星标进入时，默认展示视频收藏
+    func showVideos() {
+        segment = .videos
+        UserDefaults.standard.set(Segment.videos.rawValue, forKey: Self.segmentKey)
+        guard isViewLoaded else { return }
+        segmented.selectedSegmentIndex = Segment.videos.rawValue
+        updateChrome()
+        tableView.reloadData()
+    }
+
     // MARK: - 头部
 
     private func makeHeaderIconButton(systemName: String, action: Selector) -> UIButton {
@@ -108,7 +134,7 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
 
     private func setupHeader() {
         let width = max(tableView.bounds.width, view.bounds.width)
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 56))
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 86))
         header.backgroundColor = .clear
 
         headerTitleLabel.text = "收藏"
@@ -121,6 +147,21 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
         headerSubtitleLabel.textColor = Theme.textDim
         headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerSubtitleLabel)
+
+        segmented.selectedSegmentIndex = segment.rawValue
+        segmented.selectedSegmentTintColor = Theme.card
+        segmented.backgroundColor = Theme.tonal
+        segmented.setTitleTextAttributes([
+            .foregroundColor: Theme.textDim,
+            .font: Theme.font(13, .medium)
+        ], for: .normal)
+        segmented.setTitleTextAttributes([
+            .foregroundColor: Theme.text,
+            .font: Theme.font(13, .semibold)
+        ], for: .selected)
+        segmented.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
+        segmented.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(segmented)
 
         let actions = UIStackView(arrangedSubviews: [addFolderButton])
         actions.axis = .horizontal
@@ -137,23 +178,39 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
             headerSubtitleLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 0),
             headerSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: actions.leadingAnchor, constant: -8),
 
+            segmented.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            segmented.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
+            segmented.topAnchor.constraint(equalTo: header.topAnchor, constant: 50),
+            segmented.heightAnchor.constraint(equalToConstant: 30),
+
             actions.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -8),
-            actions.centerYAnchor.constraint(equalTo: header.centerYAnchor)
+            actions.topAnchor.constraint(equalTo: header.topAnchor, constant: 0)
         ])
 
+        addFolderButton.accessibilityLabel = "新建收藏夹"
         tableView.tableHeaderView = header
-        updateNavTitle()
+        updateChrome()
     }
 
-    private func updateNavTitle() {
+    private func updateChrome() {
         headerSubtitleLabel.text = "\(videos.count) 条视频 · \(folders.count) 个收藏夹"
+        addFolderButton.isHidden = segment == .videos
+        segmented.selectedSegmentIndex = segment.rawValue
     }
 
     private func reloadData() {
         videos = VideoFavoriteStore.shared.items
         folders = FavoriteStore.shared.folders
         tableView.reloadData()
-        updateNavTitle()
+        updateChrome()
+    }
+
+    @objc private func segmentChanged() {
+        segment = Segment(rawValue: segmented.selectedSegmentIndex) ?? .videos
+        UserDefaults.standard.set(segment.rawValue, forKey: Self.segmentKey)
+        Haptics.tap()
+        updateChrome()
+        tableView.reloadData()
     }
 
     // MARK: - 收藏夹动作
@@ -217,38 +274,28 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
     // MARK: - 表格
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
+        return 1
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 0 {
-            return videos.isEmpty ? 1 : videos.count
+        switch segment {
+        case .videos: return videos.isEmpty ? 1 : videos.count
+        case .forums: return folders.isEmpty ? 1 : folders.count
         }
-        return folders.isEmpty ? 1 : folders.count
-    }
-
-    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        if section == 0 {
-            return "视频收藏（\(videos.count)）"
-        }
-        return "论坛收藏夹（\(folders.count)）"
-    }
-
-    override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
-        guard let header = view as? UITableViewHeaderFooterView else { return }
-        header.textLabel?.font = Theme.font(13, .semibold)
-        header.textLabel?.textColor = Theme.textDim
     }
 
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        if indexPath.section == 0 {
+        switch segment {
+        case .videos:
             return videos.isEmpty ? 80 : 86 * AppSettings.shared.fontScale
+        case .forums:
+            return folders.isEmpty ? 80 : 68 * AppSettings.shared.fontScale
         }
-        return folders.isEmpty ? 80 : 68 * AppSettings.shared.fontScale
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if indexPath.section == 0 {
+        switch segment {
+        case .videos:
             if videos.isEmpty {
                 let cell = tableView.dequeueReusableCell(withIdentifier: FavoritesEmptyCell.reuseID,
                                                          for: indexPath) as! FavoritesEmptyCell
@@ -259,45 +306,49 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
                                                      for: indexPath) as! VideoFavoriteRowCell
             cell.configure(item: videos[indexPath.row])
             return cell
-        }
 
-        if folders.isEmpty {
-            let cell = tableView.dequeueReusableCell(withIdentifier: FavoritesEmptyCell.reuseID,
-                                                     for: indexPath) as! FavoritesEmptyCell
-            cell.configure(text: "还没有论坛收藏夹\n点右上角 + 新建收藏夹")
+        case .forums:
+            if folders.isEmpty {
+                let cell = tableView.dequeueReusableCell(withIdentifier: FavoritesEmptyCell.reuseID,
+                                                         for: indexPath) as! FavoritesEmptyCell
+                cell.configure(text: "还没有论坛收藏夹\n点右上角 + 新建收藏夹")
+                return cell
+            }
+            let folder = folders[indexPath.row]
+            let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
+                                                     for: indexPath) as! SiteRowCell
+            cell.configure(emoji: "📁",
+                           title: folder.name,
+                           subtitle: "\(FavoriteStore.shared.count(in: folder.id)) 条收藏")
             return cell
         }
-        let folder = folders[indexPath.row]
-        let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
-                                                 for: indexPath) as! SiteRowCell
-        cell.configure(emoji: "📁",
-                       title: folder.name,
-                       subtitle: "\(FavoriteStore.shared.count(in: folder.id)) 条收藏")
-        return cell
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        if indexPath.section == 0 {
+        switch segment {
+        case .videos:
             if videos.isEmpty {
                 tabBarController?.selectedIndex = 1
                 return
             }
             guard indexPath.row < videos.count else { return }
             openVideo(videos[indexPath.row])
-            return
+
+        case .forums:
+            if folders.isEmpty {
+                presentFolderEditor(existing: nil)
+                return
+            }
+            guard indexPath.row < folders.count else { return }
+            openFolder(folders[indexPath.row])
         }
-        if folders.isEmpty {
-            presentFolderEditor(existing: nil)
-            return
-        }
-        guard indexPath.row < folders.count else { return }
-        openFolder(folders[indexPath.row])
     }
 
     override func tableView(_ tableView: UITableView,
                             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        if indexPath.section == 0 {
+        switch segment {
+        case .videos:
             guard !videos.isEmpty, indexPath.row < videos.count else { return nil }
             let item = videos[indexPath.row]
             let delete = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, completion in
@@ -306,20 +357,21 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
                 completion(true)
             }
             return UISwipeActionsConfiguration(actions: [delete])
-        }
 
-        guard !folders.isEmpty, indexPath.row < folders.count else { return nil }
-        let folder = folders[indexPath.row]
-        let rename = UIContextualAction(style: .normal, title: "重命名") { [weak self] _, _, completion in
-            self?.presentFolderEditor(existing: folder)
-            completion(true)
+        case .forums:
+            guard !folders.isEmpty, indexPath.row < folders.count else { return nil }
+            let folder = folders[indexPath.row]
+            let rename = UIContextualAction(style: .normal, title: "重命名") { [weak self] _, _, completion in
+                self?.presentFolderEditor(existing: folder)
+                completion(true)
+            }
+            rename.backgroundColor = Theme.accentSoft
+            let delete = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, completion in
+                self?.confirmDeleteFolder(folder)
+                completion(true)
+            }
+            return UISwipeActionsConfiguration(actions: [delete, rename])
         }
-        rename.backgroundColor = Theme.accentSoft
-        let delete = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, completion in
-            self?.confirmDeleteFolder(folder)
-            completion(true)
-        }
-        return UISwipeActionsConfiguration(actions: [delete, rename])
     }
 }
 

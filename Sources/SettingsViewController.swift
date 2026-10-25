@@ -12,6 +12,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         case removeBackground
         case resetAppearance
         case videoPlayer
+        case manageVideoSites
         case manageSites
         case version
     }
@@ -103,7 +104,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
             appearance.append(.removeBackground)
         }
         appearance.append(.resetAppearance)
-        rows = [appearance, [.videoPlayer], [.manageSites], [.version]]
+        rows = [appearance, [.videoPlayer, .manageVideoSites], [.manageSites], [.version]]
     }
 
     // MARK: - 表格
@@ -156,8 +157,13 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
                            value: AppSettings.shared.videoPlayerName,
                            showsChevron: true,
                            icon: "play.rectangle.fill")
+        case .manageVideoSites:
+            cell.configure(title: "视频站点",
+                           value: "\(VideoSiteStore.shared.sites.count) 个站点",
+                           showsChevron: true,
+                           icon: "rectangle.stack")
         case .manageSites:
-            cell.configure(title: "站点管理", value: "\(Sites.all.count) 个站点", showsChevron: true, icon: "globe")
+            cell.configure(title: "论坛站点", value: "\(Sites.all.count) 个站点", showsChevron: true, icon: "globe")
         case .version:
             let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
             let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"
@@ -185,6 +191,9 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
             confirmResetAppearance()
         case .videoPlayer:
             presentVideoPlayerPicker()
+        case .manageVideoSites:
+            navigationController?.pushViewController(VideoSitesViewController(style: .insetGrouped),
+                                                     animated: true)
         case .manageSites:
             let controller = SitesViewController(style: .insetGrouped)
             controller.managementMode = true
