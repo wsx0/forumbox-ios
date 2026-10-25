@@ -16,15 +16,7 @@ enum CrashLogger {
     }
 
     static func install() {
-        NSSetUncaughtExceptionHandler { exception in
-            let text = """
-            \(Date())
-            \(exception.name.rawValue)
-            \(exception.reason ?? "")
-            \(exception.callStackSymbols.joined(separator: "\n"))
-            """
-            try? text.write(to: crashURL, atomically: true, encoding: .utf8)
-        }
+        NSSetUncaughtExceptionHandler(handleUncaughtException)
     }
 
     static func log(_ message: String) {
@@ -32,8 +24,7 @@ enum CrashLogger {
         try? text.write(to: actionURL, atomically: true, encoding: .utf8)
     }
 
-    static func presentIfNeeded(from viewController: UIViewController?) {
-        guard let viewController = viewController else { return }
+    static func presentIfNeeded(from viewController: UIViewController?) {        guard let viewController = viewController else { return }
         guard let crash = try? String(contentsOf: crashURL, encoding: .utf8), !crash.isEmpty else {
             return
         }
@@ -52,4 +43,17 @@ enum CrashLogger {
         })
         viewController.present(alert, animated: true)
     }
+}
+
+/// 必须是全局函数，才能作为 C 函数指针传给 NSSetUncaughtExceptionHandler
+private func handleUncaughtException(_ exception: NSException) {
+    let text = """
+    \(Date())
+    \(exception.name.rawValue)
+    \(exception.reason ?? "")
+    \(exception.callStackSymbols.joined(separator: "\n"))
+    """
+    let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    let url = directory.appendingPathComponent("fb_last_crash.txt")
+    try? text.write(to: url, atomically: true, encoding: .utf8)
 }
