@@ -95,4 +95,39 @@ enum WebScripts {
         } catch (e) {}
     })();
     """
+
+
+    /// 视频模式：提取页面真实标题与缩略图（og:title / og:image / video poster）
+    static let videoMetadata = """
+    (function () {
+        try {
+            function meta(selector) {
+                var el = document.querySelector(selector);
+                if (!el) return '';
+                return (el.content || el.href || el.src || '').trim();
+            }
+            function absolute(value) {
+                if (!value) return '';
+                try { return new URL(value, location.href).href; } catch (e) { return value; }
+            }
+            var title = meta('meta[property="og:title"]')
+                || meta('meta[name="twitter:title"]')
+                || meta('meta[itemprop="name"]')
+                || (document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '')
+                || document.title
+                || '';
+            var image = meta('meta[property="og:image"]')
+                || meta('meta[name="twitter:image"]')
+                || meta('link[rel="image_src"]')
+                || meta('meta[itemprop="thumbnailUrl"]');
+            if (!image) {
+                var video = document.querySelector('video[poster]');
+                if (video && video.poster) image = video.poster;
+            }
+            return { title: title, image: absolute(image) };
+        } catch (e) {
+            return { title: document.title || '', image: '' };
+        }
+    })();
+    """
 }

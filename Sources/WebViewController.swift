@@ -946,11 +946,38 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             present(alert, animated: true)
             return
         }
-        var title = (webView?.title ?? site.name).trimmingCharacters(in: .whitespacesAndNewlines)
-        if title.isEmpty { title = site.name }
-        VideoFavoriteStore.shared.add(title: title, url: url)
-        Haptics.success()
-        updateFavoriteButton()
+        captureVideoMetadata { [weak self] title, image in
+            guard let self = self else { return }
+            VideoFavoriteStore.shared.add(title: title, url: url, thumbnailURL: image)
+            Haptics.success()
+            self.updateFavoriteButton()
+        }
+    }
+
+    private func captureVideoMetadata(completion: @escaping (String, String?) -> Void) {
+        guard isViewLoaded, let webView = webView else {
+            completion(site.name, nil)
+            return
+        }
+        webView.evaluateJavaScript(WebScripts.videoMetadata) { [weak self] result, _ in
+            guard let self = self else { return }
+            var title = (self.webView.title ?? self.site.name).trimmingCharacters(in: .whitespacesAndNewlines)
+            var image: String?
+            if let dict = result as? [String: Any] {
+                if let rawTitle = dict["title"] as? String {
+                    let trimmed = rawTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty { title = trimmed }
+                }
+                if let rawImage = dict["image"] as? String {
+                    let trimmed = rawImage.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
+                        image = trimmed
+                    }
+                }
+            }
+            if title.isEmpty { title = self.site.name }
+            completion(title, image)
+        }
     }
 
     private var currentPageURL: String {

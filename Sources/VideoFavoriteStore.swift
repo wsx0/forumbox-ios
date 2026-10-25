@@ -4,6 +4,7 @@ struct VideoFavorite: Codable, Equatable {
     let id: UUID
     var title: String
     let url: String
+    var thumbnailURL: String?
     let createdAt: Date
 }
 
@@ -35,9 +36,12 @@ final class VideoFavoriteStore {
     }
 
     @discardableResult
-    func add(title: String, url: String) -> VideoFavorite {
+    func add(title: String, url: String, thumbnailURL: String? = nil) -> VideoFavorite {
         if let index = items.firstIndex(where: { $0.url == url }) {
             items[index].title = title
+            if let thumbnailURL = thumbnailURL, !thumbnailURL.isEmpty {
+                items[index].thumbnailURL = thumbnailURL
+            }
             let item = items.remove(at: index)
             items.insert(item, at: 0)
             persist()
@@ -46,6 +50,7 @@ final class VideoFavoriteStore {
         let item = VideoFavorite(id: UUID(),
                                  title: title,
                                  url: url,
+                                 thumbnailURL: thumbnailURL,
                                  createdAt: Date())
         items.insert(item, at: 0)
         persist()
