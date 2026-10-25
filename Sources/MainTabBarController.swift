@@ -28,7 +28,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
                                            image: TabIcon.image("text.bubble"),
                                            selectedImage: TabIcon.image("text.bubble"))
 
-        let videoNav = UINavigationController(rootViewController: VideoViewController(style: .insetGrouped))
+        let videoNav = UINavigationController(rootViewController: VideoViewController())
         videoNav.tabBarItem = UITabBarItem(title: "视频",
                                            image: TabIcon.image("play.rectangle"),
                                            selectedImage: TabIcon.image("play.rectangle.fill"))
