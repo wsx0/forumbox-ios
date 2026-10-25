@@ -9,9 +9,10 @@ final class SitesViewController: UITableViewController {
                                                  target: self,
                                                  action: #selector(addSite))
 
-    private lazy var signButton = makeActionButton(title: "一键签到", icon: "checkmark.seal")
-    private lazy var cloudButton = makeActionButton(title: "115 网盘", icon: "cloud")
+    private lazy var signButton = makePrimaryButton(title: "一键签到", icon: "checkmark.seal.fill")
+    private lazy var cloudButton = makeTonalButton(title: "115 网盘", icon: "cloud")
     private let headerHint = UILabel()
+    private let titleLabel = UILabel()
     private var signRunner: SignInRunner?
 
     deinit {
@@ -20,16 +21,23 @@ final class SitesViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "论坛"
         view.backgroundColor = Theme.bgTop
         tableView.backgroundColor = .clear
-        tableView.separatorStyle = .none
-        tableView.rowHeight = 82
-        tableView.contentInset = UIEdgeInsets(top: 6, left: 0, bottom: 24, right: 0)
-        tableView.register(CardCell.self, forCellReuseIdentifier: "CardCell")
+        tableView.separatorStyle = .singleLine
+        tableView.separatorColor = Theme.cardBorder
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
+        tableView.rowHeight = 68
+        tableView.sectionHeaderTopPadding = 0
+        tableView.contentInset = UIEdgeInsets(top: 4, left: 0, bottom: 24, right: 0)
+        tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
-        navigationItem.leftBarButtonItem = themeButton
-        navigationItem.rightBarButtonItems = [addButton, editButtonItem]
+
+        titleLabel.text = "论坛"
+        titleLabel.font = Theme.rounded(20, .bold)
+        titleLabel.textColor = Theme.text
+        navigationItem.title = ""
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: titleLabel)
+        navigationItem.rightBarButtonItems = [addButton, editButtonItem, themeButton]
         navigationController?.navigationBar.prefersLargeTitles = false
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
 
@@ -56,30 +64,47 @@ final class SitesViewController: UITableViewController {
 
     // MARK: - 头部
 
-    private func makeActionButton(title: String, icon: String) -> UIButton {
+    private func makePrimaryButton(title: String, icon: String) -> UIButton {
+        let button = UIButton(type: .system)
+        var config = UIButton.Configuration.filled()
+        config.title = title
+        config.image = UIImage(systemName: icon)
+        config.imagePadding = 6
+        config.baseBackgroundColor = Theme.accent
+        config.baseForegroundColor = Theme.onAccent
+        config.cornerStyle = .capsule
+        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var out = incoming
+            out.font = Theme.rounded(14, .semibold)
+            return out
+        }
+        button.configuration = config
+        return button
+    }
+
+    private func makeTonalButton(title: String, icon: String) -> UIButton {
         let button = UIButton(type: .system)
         var config = UIButton.Configuration.plain()
         config.title = title
         config.image = UIImage(systemName: icon)
         config.imagePadding = 6
-        config.baseForegroundColor = Theme.accent
-        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12)
+        config.baseForegroundColor = Theme.text
+        config.background.backgroundColor = Theme.tonal
+        config.background.cornerRadius = 20
+        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
         config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var out = incoming
-            out.font = Theme.rounded(13, .semibold)
+            out.font = Theme.rounded(14, .semibold)
             return out
         }
         button.configuration = config
-        button.backgroundColor = Theme.card
-        button.layer.cornerRadius = 12
-        button.layer.borderWidth = 1
-        button.layer.borderColor = Theme.cardBorder.cgColor
         return button
     }
 
     private func setupHeader() {
         let width = max(tableView.bounds.width, view.bounds.width)
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 84))
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 92))
         header.backgroundColor = .clear
 
         let stack = UIStackView(arrangedSubviews: [signButton, cloudButton])
@@ -89,19 +114,19 @@ final class SitesViewController: UITableViewController {
         stack.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(stack)
 
-        headerHint.font = .systemFont(ofSize: 11, weight: .medium)
-        headerHint.textColor = Theme.textFaint
+        headerHint.font = .systemFont(ofSize: 13, weight: .regular)
+        headerHint.textColor = Theme.textDim
         headerHint.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerHint)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 8),
+            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 10),
             stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
             stack.heightAnchor.constraint(equalToConstant: 40),
 
-            headerHint.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 6),
-            headerHint.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 18),
+            headerHint.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 10),
+            headerHint.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             headerHint.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16)
         ])
 
@@ -255,13 +280,10 @@ final class SitesViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let site = Sites.all[indexPath.row]
-        return tableView.dequeueCard(for: indexPath, model: CardCell.Model(
-            emoji: site.emoji,
-            title: site.name,
-            subtitle: site.note,
-            detail: site.url.shortURL,
-            showsChevron: true))
+        let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
+                                                 for: indexPath) as! SiteRowCell
+        cell.configure(site: Sites.all[indexPath.row])
+        return cell
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {

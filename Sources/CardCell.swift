@@ -1,6 +1,6 @@
 import UIKit
 
-/// 列表通用卡片单元格（论坛列表 / 搜索结果 共用）
+/// 列表通用卡片单元格（收藏夹 / 收藏列表共用）
 final class CardCell: UITableViewCell {
 
     struct Model {
@@ -27,36 +27,42 @@ final class CardCell: UITableViewCell {
 
         container.backgroundColor = Theme.card
         container.layer.cornerRadius = 16
-        container.layer.borderWidth = 1
-        container.layer.borderColor = Theme.cardBorder.cgColor
         container.translatesAutoresizingMaskIntoConstraints = false
+        if Theme.palette.isLight && Theme.isPlainStyle {
+            container.layer.borderWidth = 0
+            container.layer.shadowColor = UIColor.black.cgColor
+            container.layer.shadowOpacity = 0.04
+            container.layer.shadowRadius = 3
+            container.layer.shadowOffset = CGSize(width: 0, height: 1)
+        } else {
+            container.layer.borderWidth = 1
+            container.layer.borderColor = Theme.cardBorder.cgColor
+        }
         contentView.addSubview(container)
 
         emojiBackground.backgroundColor = Theme.emojiBg
-        emojiBackground.layer.cornerRadius = 11
-        emojiBackground.layer.borderWidth = 1
-        emojiBackground.layer.borderColor = Theme.cardBorder.cgColor
+        emojiBackground.layer.cornerRadius = 12
         emojiBackground.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(emojiBackground)
 
-        emojiLabel.font = .systemFont(ofSize: 21)
+        emojiLabel.font = .systemFont(ofSize: 22)
         emojiLabel.textAlignment = .center
         emojiLabel.translatesAutoresizingMaskIntoConstraints = false
         emojiBackground.addSubview(emojiLabel)
 
-        titleLabel.font = Theme.rounded(16)
+        titleLabel.font = Theme.rounded(16, .semibold)
         titleLabel.textColor = Theme.text
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         titleLabel.lineBreakMode = .byTruncatingTail
 
-        subtitleLabel.font = .systemFont(ofSize: 10.5, weight: .medium)
-        subtitleLabel.textColor = Theme.accent
+        subtitleLabel.font = .systemFont(ofSize: 13, weight: .regular)
+        subtitleLabel.textColor = Theme.textDim
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        subtitleLabel.lineBreakMode = .byTruncatingTail
         subtitleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
-        detailLabel.font = .systemFont(ofSize: 10.5, weight: .regular)
+        detailLabel.font = .systemFont(ofSize: 12, weight: .regular)
         detailLabel.textColor = Theme.textFaint
         detailLabel.translatesAutoresizingMaskIntoConstraints = false
         detailLabel.lineBreakMode = .byTruncatingMiddle
@@ -75,32 +81,33 @@ final class CardCell: UITableViewCell {
         NSLayoutConstraint.activate([
             container.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             container.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
-            container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
+            container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+            container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
 
-            emojiBackground.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 13),
+            emojiBackground.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 14),
             emojiBackground.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            emojiBackground.widthAnchor.constraint(equalToConstant: 40),
-            emojiBackground.heightAnchor.constraint(equalToConstant: 40),
+            emojiBackground.widthAnchor.constraint(equalToConstant: 44),
+            emojiBackground.heightAnchor.constraint(equalToConstant: 44),
 
             emojiLabel.centerXAnchor.constraint(equalTo: emojiBackground.centerXAnchor),
             emojiLabel.centerYAnchor.constraint(equalTo: emojiBackground.centerYAnchor),
 
-            chevronLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            chevronLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -14),
             chevronLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
             chevronLabel.widthAnchor.constraint(equalToConstant: 12),
 
             titleLabel.leadingAnchor.constraint(equalTo: emojiBackground.trailingAnchor, constant: 12),
-            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 13),
+            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
             titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: chevronLabel.leadingAnchor, constant: -8),
 
-            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 8),
-            subtitleLabel.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 3),
             subtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: chevronLabel.leadingAnchor, constant: -8),
 
             detailLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            detailLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
-            detailLabel.trailingAnchor.constraint(lessThanOrEqualTo: chevronLabel.leadingAnchor, constant: -8)
+            detailLabel.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 3),
+            detailLabel.trailingAnchor.constraint(lessThanOrEqualTo: chevronLabel.leadingAnchor, constant: -8),
+            detailLabel.bottomAnchor.constraint(lessThanOrEqualTo: container.bottomAnchor, constant: -12)
         ])
     }
 
@@ -112,6 +119,7 @@ final class CardCell: UITableViewCell {
         emojiLabel.text = model.emoji
         titleLabel.text = model.title
         subtitleLabel.text = model.subtitle
+        subtitleLabel.isHidden = model.subtitle.isEmpty
         if let detail = model.detail, !detail.isEmpty {
             detailLabel.text = detail
             detailLabel.isHidden = false

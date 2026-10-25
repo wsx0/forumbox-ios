@@ -23,7 +23,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
     static func make() -> MainTabBarController {
         let tab = MainTabBarController(nibName: nil, bundle: nil)
 
-        let sitesNav = UINavigationController(rootViewController: SitesViewController(style: .plain))
+        let sitesNav = UINavigationController(rootViewController: SitesViewController(style: .insetGrouped))
         sitesNav.tabBarItem = UITabBarItem(title: "论坛",
                                            image: TabIcon.image("text.bubble"),
                                            selectedImage: TabIcon.image("text.bubble"))

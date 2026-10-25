@@ -10,6 +10,7 @@ final class FavoritesViewController: UITableViewController {
                                                        action: #selector(addFolder))
 
     private let emptyHint = UILabel()
+    private let titleLabel = UILabel()
     private var favoritesObserver: NSObjectProtocol?
 
     deinit {
@@ -20,16 +21,19 @@ final class FavoritesViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "收藏"
         view.backgroundColor = Theme.bgTop
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
-        tableView.rowHeight = 82
+        tableView.rowHeight = 90
         tableView.contentInset = UIEdgeInsets(top: 6, left: 0, bottom: 24, right: 0)
         tableView.register(CardCell.self, forCellReuseIdentifier: "CardCell")
         navigationItem.backButtonDisplayMode = .minimal
-        navigationItem.leftBarButtonItem = themeButton
-        navigationItem.rightBarButtonItem = addFolderButton
+        titleLabel.text = "收藏"
+        titleLabel.font = Theme.rounded(20, .bold)
+        titleLabel.textColor = Theme.text
+        navigationItem.title = ""
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: titleLabel)
+        navigationItem.rightBarButtonItems = [addFolderButton, themeButton]
         navigationController?.navigationBar.prefersLargeTitles = false
 
         let background = Theme.makeBackgroundView(tableView.bounds)

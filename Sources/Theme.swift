@@ -25,10 +25,12 @@ final class ThemeManager {
     static let shared = ThemeManager()
 
     enum Style: String, CaseIterable {
-        case sakura, sakuraLight, ocean, sky, cyber, cream, black
+        case southPlus, southPlusDark, sakura, sakuraLight, ocean, sky, cyber, cream, black
 
         var displayName: String {
             switch self {
+            case .southPlus: return "简洁红"
+            case .southPlusDark: return "简洁暗"
             case .sakura: return "夜樱"
             case .sakuraLight: return "樱白"
             case .ocean: return "深海蓝"
@@ -40,16 +42,48 @@ final class ThemeManager {
         }
     }
 
-    private let storageKey = "fb_theme_style"
+    private let storageKey = "fb_theme_style_v2"
     private(set) var style: Style
 
     private init() {
         let raw = UserDefaults.standard.string(forKey: storageKey) ?? ""
-        style = Style(rawValue: raw) ?? .sakura
+        style = Style(rawValue: raw) ?? .southPlus
     }
 
     var palette: Palette {
         switch style {
+        case .southPlus:
+            return Palette(
+                key: "southPlus", displayName: "简洁红", isLight: true,
+                bgTop: UIColor(red: 246/255, green: 246/255, blue: 247/255, alpha: 1),
+                bgBottom: UIColor(red: 246/255, green: 246/255, blue: 247/255, alpha: 1),
+                card: .white,
+                cardBorder: UIColor(red: 226/255, green: 226/255, blue: 228/255, alpha: 1),
+                accent: UIColor(red: 206/255, green: 48/255, blue: 56/255, alpha: 1),
+                accentSoft: UIColor(red: 185/255, green: 52/255, blue: 69/255, alpha: 1),
+                text: UIColor(red: 23/255, green: 23/255, blue: 23/255, alpha: 1),
+                textDim: UIColor(red: 107/255, green: 111/255, blue: 118/255, alpha: 1),
+                textFaint: UIColor(red: 154/255, green: 156/255, blue: 163/255, alpha: 1),
+                navBg: UIColor(red: 246/255, green: 246/255, blue: 247/255, alpha: 1),
+                emojiBg: UIColor(red: 255/255, green: 238/255, blue: 240/255, alpha: 1),
+                backgroundImageName: nil,
+                showsPetals: false)
+        case .southPlusDark:
+            return Palette(
+                key: "southPlusDark", displayName: "简洁暗", isLight: false,
+                bgTop: UIColor(red: 17/255, green: 17/255, blue: 20/255, alpha: 1),
+                bgBottom: UIColor(red: 17/255, green: 17/255, blue: 20/255, alpha: 1),
+                card: UIColor(red: 26/255, green: 27/255, blue: 32/255, alpha: 1),
+                cardBorder: UIColor(red: 52/255, green: 54/255, blue: 61/255, alpha: 1),
+                accent: UIColor(red: 255/255, green: 113/255, blue: 128/255, alpha: 1),
+                accentSoft: UIColor(red: 255/255, green: 163/255, blue: 173/255, alpha: 1),
+                text: UIColor(red: 243/255, green: 244/255, blue: 246/255, alpha: 1),
+                textDim: UIColor(red: 184/255, green: 188/255, blue: 198/255, alpha: 1),
+                textFaint: UIColor(red: 133/255, green: 139/255, blue: 151/255, alpha: 1),
+                navBg: UIColor(red: 23/255, green: 24/255, blue: 29/255, alpha: 1),
+                emojiBg: UIColor(red: 58/255, green: 26/255, blue: 32/255, alpha: 1),
+                backgroundImageName: nil,
+                showsPetals: false)
         case .sakura:
             return Palette(
                 key: "sakura", displayName: "夜樱", isLight: false,
@@ -188,6 +222,20 @@ enum Theme {
     static var navBg: UIColor { return palette.navBg }
     static var emojiBg: UIColor { return palette.emojiBg }
 
+    /// 是否为「简洁」设计（SF 字体、Material 风格）
+    static var isPlainStyle: Bool { return palette.key.hasPrefix("southPlus") }
+
+    /// 次级按钮的填充色（Material tonal）
+    static var tonal: UIColor {
+        if palette.key == "southPlus" {
+            return UIColor(red: 242/255, green: 242/255, blue: 244/255, alpha: 1)
+        }
+        if palette.key == "southPlusDark" {
+            return UIColor(red: 35/255, green: 36/255, blue: 42/255, alpha: 1)
+        }
+        return palette.card
+    }
+
     /// 主题亮色下的状态栏 / 键盘样式
     static var statusBarStyle: UIStatusBarStyle {
         return palette.isLight ? .darkContent : .lightContent
@@ -203,6 +251,7 @@ enum Theme {
 
     /// 强调色上应该用什么文字颜色
     static var onAccent: UIColor {
+        if palette.key == "southPlus" { return .white }
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         if palette.accent.getRed(&r, green: &g, blue: &b, alpha: &a) {
             let luminance = 0.299 * r + 0.587 * g + 0.114 * b
@@ -213,13 +262,14 @@ enum Theme {
 
     static func rounded(_ size: CGFloat, _ weight: UIFont.Weight = .bold) -> UIFont {
         let base = UIFont.systemFont(ofSize: size, weight: weight)
+        if isPlainStyle { return base }
         if let descriptor = base.fontDescriptor.withDesign(.rounded) {
             return UIFont(descriptor: descriptor, size: size)
         }
         return base
     }
 
-    /// 背景视图：夜樱 = 樱花图 + 飘落粒子；其他主题 = 渐变
+    /// 背景视图：夜樱 = 樱花图 + 飘落粒子；其他主题 = 纯色/渐变
     static func makeBackgroundView(_ frame: CGRect) -> UIView {
         let palette = ThemeManager.shared.palette
         let container = UIView(frame: frame)
@@ -232,7 +282,7 @@ enum Theme {
             imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             imageView.frame = container.bounds
             container.addSubview(imageView)
-        } else {
+        } else if palette.bgTop != palette.bgBottom {
             let gradient = GradientView(frame: container.bounds,
                                         top: palette.bgTop,
                                         bottom: palette.bgBottom)
@@ -257,8 +307,10 @@ enum Theme {
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = palette.navBg
         appearance.shadowColor = palette.isLight ? UIColor(white: 0, alpha: 0.08) : palette.cardBorder
-        appearance.titleTextAttributes = [.foregroundColor: palette.text, .font: rounded(17)]
-        appearance.largeTitleTextAttributes = [.foregroundColor: palette.text, .font: rounded(28)]
+        appearance.titleTextAttributes = [.foregroundColor: palette.text,
+                                          .font: rounded(17, .semibold)]
+        appearance.largeTitleTextAttributes = [.foregroundColor: palette.text,
+                                               .font: rounded(28, .bold)]
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
@@ -266,14 +318,14 @@ enum Theme {
 
         let itemAppearance = UITabBarItemAppearance()
         itemAppearance.normal.iconColor = palette.textFaint
-        itemAppearance.normal.titleTextAttributes = [.foregroundColor: palette.textFaint,
-                                                     .font: rounded(9.5, .medium)]
+        itemAppearance.normal.titleTextAttributes = [.foregroundColor: palette.textDim,
+                                                     .font: rounded(12, .medium)]
         itemAppearance.selected.iconColor = palette.accent
         itemAppearance.selected.titleTextAttributes = [.foregroundColor: palette.accent,
-                                                       .font: rounded(9.5, .semibold)]
+                                                       .font: rounded(12, .semibold)]
         let tabAppearance = UITabBarAppearance()
         tabAppearance.configureWithOpaqueBackground()
-        tabAppearance.backgroundColor = palette.navBg
+        tabAppearance.backgroundColor = palette.isLight ? palette.card : palette.navBg
         tabAppearance.shadowColor = palette.isLight ? UIColor(white: 0, alpha: 0.08) : palette.cardBorder
         tabAppearance.stackedLayoutAppearance = itemAppearance
         tabAppearance.inlineLayoutAppearance = itemAppearance
