@@ -153,7 +153,7 @@ enum WebScripts {
                     || (source.dataset && source.dataset.resolution) || '').trim();
                 var src = source.src || '';
                 if (!label) {
-                    var match = src.match(/(\d{3,4})[pP]/);
+                    var match = src.match(/(\\d{3,4})[pP]/);
                     if (match) label = match[1] + 'P';
                 }
                 if (!label || seen[label]) continue;
