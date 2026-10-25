@@ -1,30 +1,7 @@
 import UIKit
 
-/// 论坛页：站点列表 + 搜索 + 站点管理
+/// 论坛页：站点列表 + 站点管理
 final class SitesViewController: UITableViewController {
-
-    private lazy var searchButton: UIButton = {
-        let button = UIButton(type: .system)
-        var config = UIButton.Configuration.plain()
-        config.title = "搜索全部论坛"
-        config.image = UIImage(systemName: "sparkles")
-        config.imagePadding = 8
-        config.baseForegroundColor = Theme.textDim
-        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
-        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
-            var out = incoming
-            out.font = Theme.rounded(14.5, .semibold)
-            return out
-        }
-        button.configuration = config
-        button.contentHorizontalAlignment = .leading
-        button.backgroundColor = Theme.card
-        button.layer.cornerRadius = 14
-        button.layer.borderWidth = 1
-        button.layer.borderColor = Theme.cardBorder.cgColor
-        button.addTarget(self, action: #selector(openSearch), for: .touchUpInside)
-        return button
-    }()
 
     private lazy var themeButton = ThemePicker.makeButton(target: self, action: #selector(showThemePicker))
 
@@ -46,7 +23,6 @@ final class SitesViewController: UITableViewController {
         navigationItem.rightBarButtonItems = [addButton, editButtonItem]
         navigationController?.navigationBar.prefersLargeTitles = false
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
-        setupSearchHeader()
     }
 
     override func viewDidLayoutSubviews() {
@@ -54,20 +30,7 @@ final class SitesViewController: UITableViewController {
         tableView.backgroundView?.frame = tableView.bounds
     }
 
-    private func setupSearchHeader() {
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 66))
-        header.backgroundColor = .clear
-        searchButton.frame = CGRect(x: 16, y: 10, width: header.bounds.width - 32, height: 46)
-        searchButton.autoresizingMask = [.flexibleWidth]
-        header.addSubview(searchButton)
-        tableView.tableHeaderView = header
-    }
-
     // MARK: - 导航动作
-
-    @objc private func openSearch() {
-        navigationController?.pushViewController(SearchViewController(), animated: true)
-    }
 
     @objc private func addSite() {
         presentEditor(for: nil, at: nil)
@@ -83,16 +46,14 @@ final class SitesViewController: UITableViewController {
         let alert = UIAlertController(title: site == nil ? "添加论坛" : "编辑论坛",
                                       message: nil,
                                       preferredStyle: .alert)
-        let placeholders = ["名称（必填）", "网址（必填，http/https）", "备注（可空）",
-                            "Emoji（可空）", "搜索页地址（可空）"]
-        let values: [String?] = [site?.name, site?.url, site?.note, site?.emoji,
-                                 site?.searchURL]
-        for i in 0..<5 {
+        let placeholders = ["名称（必填）", "网址（必填，http/https）", "备注（可空）", "Emoji（可空）"]
+        let values: [String?] = [site?.name, site?.url, site?.note, site?.emoji]
+        for i in 0..<4 {
             alert.addTextField { field in
                 field.placeholder = placeholders[i]
                 field.text = values[i]
                 field.clearButtonMode = .whileEditing
-                if i == 1 || i == 4 {
+                if i == 1 {
                     field.keyboardType = .URL
                     field.autocapitalizationType = .none
                     field.autocorrectionType = .no
@@ -101,29 +62,20 @@ final class SitesViewController: UITableViewController {
         }
         alert.addAction(UIAlertAction(title: "取消", style: .cancel))
         alert.addAction(UIAlertAction(title: "保存", style: .default) { [weak self, weak alert] _ in
-            guard let self = self, let fields = alert?.textFields, fields.count == 5 else { return }
+            guard let self = self, let fields = alert?.textFields, fields.count == 4 else { return }
             let name = (fields[0].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let url = (fields[1].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let note = (fields[2].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let emoji = (fields[3].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            let search = (fields[4].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 
             let lower = url.lowercased()
             guard !name.isEmpty, lower.hasPrefix("http://") || lower.hasPrefix("https://") else {
                 self.presentNotice("名称和网址必填，网址需要以 http:// 或 https:// 开头")
                 return
             }
-            if !search.isEmpty {
-                let lowerSearch = search.lowercased()
-                guard lowerSearch.hasPrefix("http://") || lowerSearch.hasPrefix("https://") else {
-                    self.presentNotice("搜索页地址需要以 http:// 或 https:// 开头，或留空")
-                    return
-                }
-            }
             let newSite = Site(name: name,
                                note: note,
                                url: url,
-                               searchURL: search.isEmpty ? nil : search,
                                emoji: emoji.isEmpty ? "🌐" : emoji)
             if let index = index {
                 SiteStore.shared.replace(at: index, with: newSite)

@@ -4,7 +4,6 @@ import WebKit
 final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
     private let site: Site
-    private let searchQuery: String?
     private var webView: WKWebView!
     private var contentController: WKUserContentController!
     private let progressView = UIProgressView(progressViewStyle: .bar)
@@ -51,15 +50,14 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         set { UserDefaults.standard.set(newValue, forKey: "fb_desktop_ua") }
     }
 
-    init(site: Site, searchQuery: String? = nil) {
+    init(site: Site) {
         self.site = site
-        self.searchQuery = searchQuery
         super.init(nibName: nil, bundle: nil)
         hidesBottomBarWhenPushed = true
     }
 
     convenience init(title: String, urlString: String) {
-        self.init(site: Site(name: title, note: "", url: urlString, searchURL: nil))
+        self.init(site: Site(name: title, note: "", url: urlString))
     }
 
     required init?(coder: NSCoder) {
@@ -129,12 +127,6 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         ucc.addUserScript(WKUserScript(source: WebScripts.popupSuppressor,
                                        injectionTime: .atDocumentStart,
                                        forMainFrameOnly: false))
-        // 聚合搜索：跳到站内搜索页后，自动填写关键词并提交
-        if searchQuery != nil {
-            ucc.addUserScript(WKUserScript(source: WebScripts.autoSearch,
-                                           injectionTime: .atDocumentEnd,
-                                           forMainFrameOnly: true))
-        }
         contentController = ucc
 
         let webView = WKWebView(frame: .zero, configuration: config)
@@ -542,15 +534,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     // MARK: - 导航
 
     private func load() {
-        var target = site.url
-        if searchQuery != nil, let searchURL = site.searchURL, !searchURL.isEmpty {
-            target = searchURL
-        }
-        guard var url = URL(string: target) else { return }
-        if let q = searchQuery, site.searchURL != nil,
-           let encoded = q.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
-            url = URL(string: target + "#fbq=" + encoded) ?? url
-        }
+        guard let url = URL(string: site.url) else { return }
         isReaderMode = false
         webView.load(URLRequest(url: url))
     }
