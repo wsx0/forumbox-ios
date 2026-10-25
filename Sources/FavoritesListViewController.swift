@@ -1,12 +1,15 @@
 import UIKit
 
 /// 收藏夹详情：每页 10 条，底部页码分页
-final class FavoritesListViewController: UITableViewController {
+final class FavoritesListViewController: UITableViewController, UISearchResultsUpdating {
 
     private let folderId: UUID?
     private let folderTitleText: String
     private var items: [FavoriteItem] = []
+    private var filteredItems: [FavoriteItem] = []
     private let emptyHint = UILabel()
+    private let searchController = UISearchController(searchResultsController: nil)
+    private var searchText = ""
 
     private let pageSize = 10
     private var currentPage = 1
@@ -40,6 +43,24 @@ final class FavoritesListViewController: UITableViewController {
         tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
         tableView.register(FavoriteRowCell.self, forCellReuseIdentifier: FavoriteRowCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
+
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "搜索标题 / 站点"
+        searchController.searchBar.tintColor = Theme.accent
+        searchController.searchBar.searchTextField.backgroundColor = Theme.card
+        searchController.searchBar.searchTextField.textColor = Theme.text
+        searchController.searchBar.searchTextField.font = Theme.font(14, .regular)
+        searchController.searchBar.searchTextField.attributedPlaceholder = NSAttributedString(
+            string: "搜索标题 / 站点",
+            attributes: [
+                .foregroundColor: Theme.textFaint,
+                .font: Theme.font(14, .regular)
+            ]
+        )
+        navigationItem.searchController = searchController
+        navigationItem.hidesSearchBarWhenScrolling = false
+        definesPresentationContext = true
 
         let background = Theme.makeBackgroundView(tableView.bounds)
         tableView.backgroundView = background
@@ -76,15 +97,15 @@ final class FavoritesListViewController: UITableViewController {
     // MARK: - 分页
 
     private var totalPages: Int {
-        return max(1, Int(ceil(Double(items.count) / Double(pageSize))))
+        return max(1, Int(ceil(Double(filteredItems.count) / Double(pageSize))))
     }
 
     private var pageItems: [FavoriteItem] {
-        guard !items.isEmpty else { return [] }
+        guard !filteredItems.isEmpty else { return [] }
         let start = (currentPage - 1) * pageSize
-        guard start < items.count else { return [] }
-        let end = min(start + pageSize, items.count)
-        return Array(items[start..<end])
+        guard start < filteredItems.count else { return [] }
+        let end = min(start + pageSize, filteredItems.count)
+        return Array(filteredItems[start..<end])
     }
 
     private func setupPagination() {
@@ -158,7 +179,7 @@ final class FavoritesListViewController: UITableViewController {
         if currentPage > pages { currentPage = pages }
         if currentPage < 1 { currentPage = 1 }
 
-        let shouldShow = pages > 1 && !items.isEmpty
+        let shouldShow = pages > 1 && !filteredItems.isEmpty
         paginationBar.isHidden = !shouldShow
         tableView.contentInset.bottom = shouldShow ? 76 : 24
 
@@ -226,14 +247,38 @@ final class FavoritesListViewController: UITableViewController {
 
     // MARK: - 数据
 
-    private func loadItems() {
+
+    private func loadItems(resetPage: Bool = false) {
         items = FavoriteStore.shared.items(in: folderId)
+        applyFilter(resetPage: resetPage)
+    }
+
+    private func applyFilter(resetPage: Bool) {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query.isEmpty {
+            filteredItems = items
+        } else {
+            filteredItems = items.filter { item in
+                item.title.localizedCaseInsensitiveContains(query)
+                    || item.siteName.localizedCaseInsensitiveContains(query)
+                    || item.url.localizedCaseInsensitiveContains(query)
+            }
+        }
+        if resetPage { currentPage = 1 }
         let pages = totalPages
         if currentPage > pages { currentPage = pages }
         if currentPage < 1 { currentPage = 1 }
-        emptyHint.isHidden = !items.isEmpty
+        emptyHint.text = items.isEmpty
+            ? "这个收藏夹还是空的"
+            : (filteredItems.isEmpty ? "没有匹配的收藏" : "")
+        emptyHint.isHidden = !filteredItems.isEmpty
         tableView.reloadData()
         updatePagination()
+    }
+
+    func updateSearchResults(for searchController: UISearchController) {
+        searchText = searchController.searchBar.text ?? ""
+        loadItems(resetPage: true)
     }
 
     private func presentMovePicker(item: FavoriteItem) {
