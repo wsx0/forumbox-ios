@@ -70,6 +70,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        CrashLogger.log("webview load \(site.url) video=\(videoMode)")
         view.backgroundColor = Theme.bgTop
         title = site.name
         navigationItem.rightBarButtonItems = [favoriteButton, moreButton]
@@ -136,9 +137,13 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()   // 持久化 Cookie，登录态保留
         config.allowsInlineMediaPlayback = true
-        config.mediaTypesRequiringUserActionForPlayback = []
-        config.allowsPictureInPictureMediaPlayback = true
-        config.allowsAirPlayForMediaPlayback = true
+        if videoMode {
+            // 视频兼容模式：只保留内联播放，避免 PiP / AirPlay / 自动播放在 iOS 26 WebKit 上触发崩溃
+        } else {
+            config.mediaTypesRequiringUserActionForPlayback = []
+            config.allowsPictureInPictureMediaPlayback = true
+            config.allowsAirPlayForMediaPlayback = true
+        }
 
         let ucc = config.userContentController
         // 屏蔽 JS 弹窗（window.open）

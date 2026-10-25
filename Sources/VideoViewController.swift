@@ -17,6 +17,7 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate, Scr
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        CrashLogger.log("video tab loaded")
         view.backgroundColor = Theme.bgTop
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .singleLine
@@ -248,6 +249,7 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate, Scr
 
     private func openVideo(url: URL, title: String? = nil) {
         guard navigationController?.topViewController === self else { return }
+        CrashLogger.log("open video \(url.absoluteString)")
         Haptics.tap()
         let host = url.host ?? "视频"
         let name = title ?? host
