@@ -354,12 +354,18 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         errorDetailLabel.textAlignment = .center
 
         let retry = UIButton(type: .system)
-        retry.setTitle("重新加载", for: .normal)
-        retry.setTitleColor(Theme.onAccent, for: .normal)
-        retry.titleLabel?.font = Theme.rounded(14, .semibold)
-        retry.backgroundColor = Theme.accent
-        retry.layer.cornerRadius = 12
-        retry.contentEdgeInsets = UIEdgeInsets(top: 10, left: 24, bottom: 10, right: 24)
+        var retryConfig = UIButton.Configuration.plain()
+        retryConfig.title = "重新加载"
+        retryConfig.baseForegroundColor = Theme.onAccent
+        retryConfig.background.backgroundColor = Theme.accent
+        retryConfig.background.cornerRadius = 12
+        retryConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 24, bottom: 10, trailing: 24)
+        retryConfig.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var out = incoming
+            out.font = Theme.rounded(14, .semibold)
+            return out
+        }
+        retry.configuration = retryConfig
         retry.addTarget(self, action: #selector(retryFromError), for: .touchUpInside)
 
         let stack = UIStackView(arrangedSubviews: [emoji, title, errorDetailLabel, retry])

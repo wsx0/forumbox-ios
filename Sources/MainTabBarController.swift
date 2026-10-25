@@ -5,9 +5,13 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
 
     private let lastTabKey = "fb_last_tab_v3"
     private var favoritesObserver: NSObjectProtocol?
+    private var videoFavoritesObserver: NSObjectProtocol?
 
     deinit {
         if let observer = favoritesObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = videoFavoritesObserver {
             NotificationCenter.default.removeObserver(observer)
         }
     }
@@ -26,7 +30,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
         let sitesNav = UINavigationController(rootViewController: SitesViewController(style: .insetGrouped))
         sitesNav.tabBarItem = UITabBarItem(title: "论坛",
                                            image: TabIcon.image("text.bubble"),
-                                           selectedImage: TabIcon.image("text.bubble"))
+                                           selectedImage: TabIcon.image("text.bubble.fill"))
 
         let videoNav = UINavigationController(rootViewController: VideoViewController())
         videoNav.tabBarItem = UITabBarItem(title: "视频",
@@ -62,7 +66,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
     }
 
     private func updateFavoriteBadge() {
-        let count = FavoriteStore.shared.items.count
+        let count = FavoriteStore.shared.items.count + VideoFavoriteStore.shared.items.count
         viewControllers?[2].tabBarItem.badgeValue = count > 0 ? "\(count)" : nil
     }
 

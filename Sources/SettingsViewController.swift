@@ -137,29 +137,31 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         let row = rows[indexPath.section][indexPath.row]
         switch row {
         case .theme:
-            cell.configure(title: "主题", value: ThemeManager.shared.style.displayName, showsChevron: true)
+            cell.configure(title: "主题", value: ThemeManager.shared.style.displayName, showsChevron: true, icon: "paintpalette.fill")
         case .font:
-            cell.configure(title: "字体", value: AppSettings.shared.fontChoice.displayName, showsChevron: true)
+            cell.configure(title: "字体", value: AppSettings.shared.fontChoice.displayName, showsChevron: true, icon: "textformat")
         case .fontSize:
-            cell.configure(title: "字号", value: AppSettings.shared.fontScaleName, showsChevron: true)
+            cell.configure(title: "字号", value: AppSettings.shared.fontScaleName, showsChevron: true, icon: "textformat.size")
         case .background:
             cell.configure(title: "背景图",
                            value: AppSettings.shared.hasBackground ? "已设置" : "未设置",
-                           showsChevron: true)
+                           showsChevron: true,
+                           icon: "photo.fill")
         case .removeBackground:
-            cell.configure(title: "移除背景图", value: nil, showsChevron: false, destructive: true)
+            cell.configure(title: "移除背景图", value: nil, showsChevron: false, destructive: true, icon: "trash")
         case .resetAppearance:
-            cell.configure(title: "恢复默认外观", value: nil, showsChevron: false, destructive: true)
+            cell.configure(title: "恢复默认外观", value: nil, showsChevron: false, destructive: true, icon: "arrow.counterclockwise")
         case .videoPlayer:
             cell.configure(title: "视频播放器",
                            value: AppSettings.shared.videoPlayerName,
-                           showsChevron: true)
+                           showsChevron: true,
+                           icon: "play.rectangle.fill")
         case .manageSites:
-            cell.configure(title: "站点管理", value: "\(Sites.all.count) 个站点", showsChevron: true)
+            cell.configure(title: "站点管理", value: "\(Sites.all.count) 个站点", showsChevron: true, icon: "globe")
         case .version:
             let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
             let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"
-            cell.configure(title: "版本", value: "\(version) (\(build))", showsChevron: false)
+            cell.configure(title: "版本", value: "\(version) (\(build))", showsChevron: false, icon: "info.circle")
         }
         return cell
     }
@@ -298,6 +300,8 @@ final class SettingRowCell: UITableViewCell {
 
     static let reuseID = "SettingRowCell"
 
+    private let iconBackground = UIView()
+    private let iconView = UIImageView()
     private let titleLabel = UILabel()
     private let valueLabel = UILabel()
     private let chevronLabel = UILabel()
@@ -310,6 +314,15 @@ final class SettingRowCell: UITableViewCell {
         let selected = UIView()
         selected.backgroundColor = Theme.tonal
         selectedBackgroundView = selected
+
+        iconBackground.backgroundColor = Theme.tonal
+        iconBackground.layer.cornerRadius = 8
+        iconBackground.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(iconBackground)
+
+        iconView.contentMode = .scaleAspectFit
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconBackground.addSubview(iconView)
 
         titleLabel.font = Theme.rounded(15, .medium)
         titleLabel.textColor = Theme.text
@@ -330,7 +343,17 @@ final class SettingRowCell: UITableViewCell {
         contentView.addSubview(chevronLabel)
 
         NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            iconBackground.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            iconBackground.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            iconBackground.widthAnchor.constraint(equalToConstant: 28),
+            iconBackground.heightAnchor.constraint(equalToConstant: 28),
+
+            iconView.centerXAnchor.constraint(equalTo: iconBackground.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconBackground.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 16),
+            iconView.heightAnchor.constraint(equalToConstant: 16),
+
+            titleLabel.leadingAnchor.constraint(equalTo: iconBackground.trailingAnchor, constant: 12),
             titleLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
 
             chevronLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
@@ -347,11 +370,20 @@ final class SettingRowCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(title: String, value: String?, showsChevron: Bool, destructive: Bool = false) {
+    func configure(title: String,
+                   value: String?,
+                   showsChevron: Bool,
+                   destructive: Bool = false,
+                   icon: String? = nil) {
         titleLabel.text = title
         titleLabel.textColor = destructive ? UIColor.systemRed : Theme.text
         valueLabel.text = value
         valueLabel.isHidden = (value ?? "").isEmpty
         chevronLabel.isHidden = !showsChevron
+        iconView.image = icon.flatMap { UIImage(systemName: $0) }
+        iconView.tintColor = destructive ? UIColor.systemRed : Theme.accent
+        iconBackground.backgroundColor = destructive
+            ? UIColor.systemRed.withAlphaComponent(0.10)
+            : Theme.tonal
     }
 }

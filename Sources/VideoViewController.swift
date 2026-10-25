@@ -114,6 +114,17 @@ final class VideoViewController: UIViewController,
 
         header.addSubview(favoritesButton)
 
+        let headerLine = UIView()
+        headerLine.backgroundColor = Theme.cardBorder
+        headerLine.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(headerLine)
+        NSLayoutConstraint.activate([
+            headerLine.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            headerLine.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            headerLine.bottomAnchor.constraint(equalTo: header.bottomAnchor),
+            headerLine.heightAnchor.constraint(equalToConstant: 0.5)
+        ])
+
         favoritesBadge.font = Theme.rounded(9, .bold)
         favoritesBadge.textColor = Theme.onAccent
         favoritesBadge.backgroundColor = Theme.accent
