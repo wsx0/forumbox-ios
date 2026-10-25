@@ -135,4 +135,40 @@ enum WebScripts {
         }
     })();
     """
+
+
+    /// 视频模式：当前清晰度 / 倍速 / 可切换的 source
+    static let videoPlaybackInfo = """
+    (function () {
+        try {
+            var v = document.querySelector('video');
+            if (!v) return { height: 0, width: 0, rate: 1, qualities: [] };
+            var qualities = [];
+            var seen = {};
+            var sources = v.querySelectorAll('source');
+            for (var i = 0; i < sources.length; i++) {
+                var source = sources[i];
+                var label = (source.label || (source.dataset && source.dataset.label)
+                    || (source.dataset && source.dataset.quality)
+                    || (source.dataset && source.dataset.resolution) || '').trim();
+                var src = source.src || '';
+                if (!label) {
+                    var match = src.match(/(\d{3,4})[pP]/);
+                    if (match) label = match[1] + 'P';
+                }
+                if (!label || seen[label]) continue;
+                seen[label] = 1;
+                qualities.push({ label: label, index: i });
+            }
+            return {
+                height: v.videoHeight || 0,
+                width: v.videoWidth || 0,
+                rate: v.playbackRate || 1,
+                qualities: qualities
+            };
+        } catch (e) {
+            return { height: 0, width: 0, rate: 1, qualities: [] };
+        }
+    })();
+    """
 }

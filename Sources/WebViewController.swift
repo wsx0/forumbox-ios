@@ -29,6 +29,14 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var isTransferring115 = false
     private var ed2kHandlerRegistered = false
 
+    private var videoControlBar: UIView?
+    private let qualityButton = UIButton(type: .system)
+    private let speedButton = UIButton(type: .system)
+    private var videoInfoTimer: Timer?
+    private var currentVideoHeight = 0
+    private var currentVideoRate: Float = 1
+    private var availableQualities: [[String: Any]] = []
+
     private let errorOverlay = UIView()
     private let errorDetailLabel = UILabel()
 
@@ -74,6 +82,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         title = site.name
         navigationItem.rightBarButtonItems = [favoriteButton, moreButton]
 
+        currentVideoRate = preferredRate
         buildWebView()
         buildLayout()
         setupLoadingOverlay()
@@ -103,6 +112,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     }
 
     deinit {
+        videoInfoTimer?.invalidate()
         observations.forEach { $0.invalidate() }
         // 只移除确实注册过的 handler（未注册时移除在 WebKit 里有已知的竞态崩溃）
         if ed2kHandlerRegistered {
@@ -115,6 +125,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        if videoMode {
+            startVideoInfoTimer()
+        }
         updateFavoriteButton()
         // 关闭系统整页 pop：右滑只用于网页内回退，不再误触退回列表
         navigationController?.interactivePopGestureRecognizer?.isEnabled = false
@@ -122,6 +135,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        videoInfoTimer?.invalidate()
+        videoInfoTimer = nil
         navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
 
@@ -242,6 +257,215 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             progressView.heightAnchor.constraint(equalToConstant: 2)
         ])
+
+        if videoMode {
+            let videoBar = UIView()
+            videoBar.translatesAutoresizingMaskIntoConstraints = false
+            videoBar.backgroundColor = Theme.card
+            videoBar.layer.cornerRadius = 19
+            videoBar.layer.masksToBounds = false
+            if Theme.palette.isLight {
+                videoBar.layer.shadowColor = UIColor.black.cgColor
+                videoBar.layer.shadowOpacity = 0.08
+                videoBar.layer.shadowRadius = 10
+                videoBar.layer.shadowOffset = CGSize(width: 0, height: 3)
+            } else {
+                videoBar.layer.borderWidth = 1
+                videoBar.layer.borderColor = Theme.cardBorder.cgColor
+            }
+            view.addSubview(videoBar)
+            videoControlBar = videoBar
+
+            configureVideoButton(qualityButton, title: "清晰度 自动")
+            configureVideoButton(speedButton, title: "倍速 \(rateText(currentVideoRate))")
+            qualityButton.addTarget(self, action: #selector(showQualityMenu), for: .touchUpInside)
+            speedButton.addTarget(self, action: #selector(showSpeedMenu), for: .touchUpInside)
+
+            let videoStack = UIStackView(arrangedSubviews: [qualityButton, speedButton])
+            videoStack.axis = .horizontal
+            videoStack.alignment = .center
+            videoStack.spacing = 2
+            videoStack.translatesAutoresizingMaskIntoConstraints = false
+            videoBar.addSubview(videoStack)
+
+            NSLayoutConstraint.activate([
+                videoBar.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                videoBar.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+                videoBar.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+                videoBar.bottomAnchor.constraint(equalTo: bar.topAnchor, constant: -8),
+                videoBar.heightAnchor.constraint(equalToConstant: 38),
+
+                videoStack.leadingAnchor.constraint(equalTo: videoBar.leadingAnchor, constant: 6),
+                videoStack.trailingAnchor.constraint(equalTo: videoBar.trailingAnchor, constant: -6),
+                videoStack.topAnchor.constraint(equalTo: videoBar.topAnchor, constant: 2),
+                videoStack.bottomAnchor.constraint(equalTo: videoBar.bottomAnchor, constant: -2)
+            ])
+        }
+    }
+
+    private func configureVideoButton(_ button: UIButton, title: String) {
+        var config = UIButton.Configuration.plain()
+        config.title = title
+        config.baseForegroundColor = Theme.textDim
+        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10)
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var out = incoming
+            out.font = Theme.font(12, .medium)
+            return out
+        }
+        button.configuration = config
+    }
+
+    private func setVideoButtonTitle(_ button: UIButton, _ title: String) {
+        guard var config = button.configuration else { return }
+        config.title = title
+        button.configuration = config
+    }
+
+    private var preferredRate: Float {
+        let value = UserDefaults.standard.double(forKey: "fb_video_speed")
+        return value > 0 ? Float(value) : 1.0
+    }
+
+    private func rateText(_ rate: Float) -> String {
+        if abs(rate - rate.rounded()) < 0.01 {
+            return String(format: "%.0fx", rate)
+        }
+        if abs(rate * 100 - (rate * 100).rounded()) < 0.1 {
+            return String(format: "%.2fx", rate)
+        }
+        return String(format: "%.1fx", rate)
+    }
+
+    private func qualityLabel() -> String {
+        let height = currentVideoHeight
+        if height >= 2000 { return "4K" }
+        if height >= 1080 { return "1080P" }
+        if height >= 720 { return "720P" }
+        if height >= 480 { return "480P" }
+        if height > 0 { return "\(height)P" }
+        return "自动"
+    }
+
+    private func startVideoInfoTimer() {
+        videoInfoTimer?.invalidate()
+        refreshVideoInfo()
+        let timer = Timer(timeInterval: 1.5, repeats: true) { [weak self] _ in
+            self?.refreshVideoInfo()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        videoInfoTimer = timer
+    }
+
+    private func refreshVideoInfo() {
+        guard videoMode, let webView = webView, !webView.isLoading else { return }
+        webView.evaluateJavaScript(WebScripts.videoPlaybackInfo) { [weak self] result, _ in
+            guard let self = self, let dict = result as? [String: Any] else { return }
+            self.currentVideoHeight = (dict["height"] as? NSNumber)?.intValue ?? 0
+            if let rate = (dict["rate"] as? NSNumber)?.floatValue, rate > 0 {
+                self.currentVideoRate = rate
+            }
+            if let qualities = dict["qualities"] as? [[String: Any]] {
+                self.availableQualities = qualities
+            } else {
+                self.availableQualities = []
+            }
+            self.updateVideoControlTitles()
+        }
+    }
+
+    private func updateVideoControlTitles() {
+        guard videoMode else { return }
+        setVideoButtonTitle(qualityButton, "清晰度 \(qualityLabel())")
+        setVideoButtonTitle(speedButton, "倍速 \(rateText(currentVideoRate))")
+    }
+
+    private func applyPlaybackRate(_ rate: Float, persist: Bool = false) {
+        if persist {
+            UserDefaults.standard.set(Double(rate), forKey: "fb_video_speed")
+        }
+        currentVideoRate = rate
+        let js = "document.querySelectorAll('video').forEach(function(v){v.defaultPlaybackRate=\(rate);v.playbackRate=\(rate);});"
+        webView?.evaluateJavaScript(js)
+        updateVideoControlTitles()
+    }
+
+    @objc private func showQualityMenu() {
+        if availableQualities.count > 1 {
+            let sheet = UIAlertController(title: "清晰度", message: nil, preferredStyle: .actionSheet)
+            for item in availableQualities {
+                guard let label = item["label"] as? String,
+                      let index = (item["index"] as? NSNumber)?.intValue,
+                      index >= 0 else { continue }
+                let title = label.caseInsensitiveCompare(qualityLabel()) == .orderedSame
+                    ? "\(label)  ✓"
+                    : label
+                sheet.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                    self?.setVideoQuality(index)
+                })
+            }
+            sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+            if let pop = sheet.popoverPresentationController {
+                pop.sourceView = qualityButton
+                pop.sourceRect = qualityButton.bounds
+            }
+            present(sheet, animated: true)
+            return
+        }
+
+        let alert = UIAlertController(title: "清晰度",
+                                      message: "当前：\(qualityLabel())\n切换清晰度请使用播放器内按钮",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "好", style: .default))
+        present(alert, animated: true)
+    }
+
+    private func setVideoQuality(_ index: Int) {
+        let js = """
+        (function () {
+            var v = document.querySelector('video');
+            if (!v) return false;
+            var source = v.querySelectorAll('source')[\(index)];
+            if (!source || !source.src) return false;
+            v.src = source.src;
+            v.load();
+            v.play().catch(function () {});
+            return true;
+        })();
+        """
+        webView?.evaluateJavaScript(js) { [weak self] result, _ in
+            guard let self = self else { return }
+            let ok = (result as? Bool) == true
+                || ((result as? NSNumber)?.boolValue == true)
+            if ok {
+                Haptics.success()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    self.refreshVideoInfo()
+                }
+            } else {
+                self.presentNotice("这个播放器不支持直接切换清晰度，请用播放器内按钮")
+            }
+        }
+    }
+
+    @objc private func showSpeedMenu() {
+        let rates: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+        let sheet = UIAlertController(title: "播放倍速", message: nil, preferredStyle: .actionSheet)
+        for rate in rates {
+            let title = abs(currentVideoRate - rate) < 0.01
+                ? "\(rateText(rate))  ✓"
+                : rateText(rate)
+            sheet.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                self?.applyPlaybackRate(rate, persist: true)
+                Haptics.tap()
+            })
+        }
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        if let pop = sheet.popoverPresentationController {
+            pop.sourceView = speedButton
+            pop.sourceRect = speedButton.bounds
+        }
+        present(sheet, animated: true)
     }
 
     private func makeToolbarButton(icon: String, action: Selector) -> UIButton {
@@ -439,6 +663,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         ignoreScrollUntil = Date().addingTimeInterval(0.35)
         if !hidden {
             toolbarBar.isHidden = false
+            videoControlBar?.isHidden = false
         }
         if hidden {
             webBottomToToolbar.isActive = false
@@ -452,12 +677,18 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             self.toolbarBar.transform = hidden
                 ? CGAffineTransform(translationX: 0, y: self.toolbarBar.bounds.height + 40)
                 : .identity
+            self.videoControlBar?.transform = hidden
+                ? CGAffineTransform(translationX: 0,
+                                    y: (self.videoControlBar?.bounds.height ?? 0) + 48)
+                : .identity
             self.view.layoutIfNeeded()
         }
         let completion: (Bool) -> Void = { _ in
             if hidden {
                 self.toolbarBar.isHidden = true
                 self.toolbarBar.transform = .identity
+                self.videoControlBar?.isHidden = true
+                self.videoControlBar?.transform = .identity
             }
         }
         if animated {
@@ -683,6 +914,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                                                          title: pageTitle,
                                                          thumbnailURL: image)
             }
+        }
+        if videoMode {
+            applyPlaybackRate(preferredRate)
+            refreshVideoInfo()
         }
         if !hasFadedInContent {
             hasFadedInContent = true
