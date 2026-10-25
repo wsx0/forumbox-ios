@@ -314,7 +314,7 @@ enum Theme {
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
-        UINavigationBar.appearance().tintColor = palette.accent
+        UINavigationBar.appearance().tintColor = palette.textDim
 
         let itemAppearance = UITabBarItemAppearance()
         itemAppearance.normal.iconColor = palette.textFaint

@@ -83,9 +83,24 @@ final class SiteRowCell: UITableViewCell {
     }
 
     func configure(emoji: String, title: String, subtitle: String) {
-        emojiLabel.text = emoji
+        applyIdentity(emoji: emoji, title: title)
         titleLabel.text = title
         subtitleLabel.text = subtitle
         subtitleLabel.isHidden = subtitle.isEmpty
+    }
+
+    private func applyIdentity(emoji: String, title: String) {
+        if Theme.isPlainStyle {
+            let initial = title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1)
+            emojiLabel.text = initial.isEmpty ? "·" : String(initial)
+            emojiLabel.font = Theme.rounded(17, .semibold)
+            emojiLabel.textColor = Theme.textDim
+            emojiBackground.backgroundColor = Theme.tonal
+        } else {
+            emojiLabel.text = emoji
+            emojiLabel.font = .systemFont(ofSize: 22)
+            emojiLabel.textColor = Theme.text
+            emojiBackground.backgroundColor = Theme.emojiBg
+        }
     }
 }

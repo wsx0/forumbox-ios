@@ -1,7 +1,7 @@
 import UIKit
 import WebKit
 
-final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, UIGestureRecognizerDelegate {
+final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
 
     private let site: Site
     private var webView: WKWebView!
@@ -17,8 +17,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var hasHiddenLoading = false
     private var favoritesObserver: NSObjectProtocol?
 
-    private var toolbar: UIToolbar!
-    private var bottomFiller: UIView!
+    private var toolbarBar: UIView!
     private var webBottomToToolbar: NSLayoutConstraint!
     private var webBottomToSafeArea: NSLayoutConstraint!
     private var toolbarHidden = false
@@ -31,10 +30,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private let errorOverlay = UIView()
     private let errorDetailLabel = UILabel()
 
-    private lazy var backButton = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(goBack))
-    private lazy var forwardButton = UIBarButtonItem(image: UIImage(systemName: "chevron.right"), style: .plain, target: self, action: #selector(goForward))
-    private lazy var reloadButton = UIBarButtonItem(image: UIImage(systemName: "arrow.clockwise"), style: .plain, target: self, action: #selector(reload))
-    private lazy var homeButton = UIBarButtonItem(image: UIImage(systemName: "house"), style: .plain, target: self, action: #selector(goHome))
+    private lazy var backButton = makeToolbarButton(icon: "chevron.left", action: #selector(goBack))
+    private lazy var forwardButton = makeToolbarButton(icon: "chevron.right", action: #selector(goForward))
+    private lazy var reloadButton = makeToolbarButton(icon: "arrow.clockwise", action: #selector(reloadOrStop))
+    private lazy var homeButton = makeToolbarButton(icon: "house", action: #selector(goHome))
     private lazy var moreButton = UIBarButtonItem(image: UIImage(systemName: "ellipsis.circle"), style: .plain, target: self, action: #selector(showMoreMenu))
     private lazy var favoriteButton = UIBarButtonItem(image: UIImage(systemName: "star"), style: .plain, target: self, action: #selector(toggleFavorite))
 
@@ -84,12 +83,6 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         refresh.addTarget(self, action: #selector(pulledToRefresh), for: .valueChanged)
         webView.scrollView.refreshControl = refresh
 
-        // 左边缘右滑：先在网页里返回上一页；没有上一页才退回论坛列表
-        let edgePan = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handleEdgePan(_:)))
-        edgePan.edges = .left
-        edgePan.delegate = self
-        view.addGestureRecognizer(edgePan)
-
         // 收藏在其他页面被修改时，同步星标
         favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
                                                                    object: nil,
@@ -115,7 +108,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         updateFavoriteButton()
-        // 交给自定义边缘手势处理：系统 pop 手势会把整个页面直接弹回论坛列表
+        // 关闭系统整页 pop：右滑只用于网页内回退，不再误触退回列表
         navigationController?.interactivePopGestureRecognizer?.isEnabled = false
     }
 
@@ -154,7 +147,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         webView.alpha = 0
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        webView.allowsBackForwardNavigationGestures = false
+        webView.allowsBackForwardNavigationGestures = true
         view.addSubview(webView)
         self.webView = webView
     }
@@ -166,28 +159,33 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         progressView.isHidden = true
         view.addSubview(progressView)
 
-        let toolbar = UIToolbar()
-        toolbar.translatesAutoresizingMaskIntoConstraints = false
-        toolbar.isTranslucent = false
-        toolbar.barTintColor = Theme.navBg
-        toolbar.tintColor = Theme.textDim
-        let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-        toolbar.items = [backButton, flex, forwardButton, flex, homeButton, flex, reloadButton]
-        view.addSubview(toolbar)
-        self.toolbar = toolbar
+        // 悬浮胶囊工具栏（替代原生 UIToolbar，和页面衔接更自然）
+        let bar = UIView()
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        bar.backgroundColor = Theme.card
+        bar.layer.cornerRadius = 24
+        bar.layer.masksToBounds = false
+        if Theme.palette.isLight {
+            bar.layer.shadowColor = UIColor.black.cgColor
+            bar.layer.shadowOpacity = 0.10
+            bar.layer.shadowRadius = 14
+            bar.layer.shadowOffset = CGSize(width: 0, height: 4)
+        } else {
+            bar.layer.borderWidth = 1
+            bar.layer.borderColor = Theme.cardBorder.cgColor
+        }
+        view.addSubview(bar)
+        toolbarBar = bar
 
-        let filler = UIView()
-        filler.backgroundColor = Theme.navBg
-        filler.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(filler)
-        self.bottomFiller = filler
+        let stack = UIStackView(arrangedSubviews: [backButton, forwardButton, homeButton, reloadButton])
+        stack.axis = .horizontal
+        stack.distribution = .fill
+        stack.alignment = .center
+        stack.spacing = 4
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        bar.addSubview(stack)
 
-        let separator = UIView()
-        separator.backgroundColor = Theme.cardBorder
-        separator.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(separator)
-
-        webBottomToToolbar = webView.bottomAnchor.constraint(equalTo: toolbar.topAnchor)
+        webBottomToToolbar = webView.bottomAnchor.constraint(equalTo: bar.topAnchor, constant: -8)
         webBottomToSafeArea = webView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         webBottomToToolbar.isActive = true
 
@@ -196,26 +194,35 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
 
-            toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            toolbar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            toolbar.heightAnchor.constraint(equalToConstant: 44),
+            bar.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            bar.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            bar.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+            bar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8),
+            bar.heightAnchor.constraint(equalToConstant: 48),
 
-            filler.topAnchor.constraint(equalTo: toolbar.bottomAnchor),
-            filler.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            filler.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            filler.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            separator.bottomAnchor.constraint(equalTo: toolbar.topAnchor),
-            separator.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            separator.heightAnchor.constraint(equalToConstant: 0.5),
+            stack.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 10),
+            stack.trailingAnchor.constraint(equalTo: bar.trailingAnchor, constant: -10),
+            stack.topAnchor.constraint(equalTo: bar.topAnchor, constant: 2),
+            stack.bottomAnchor.constraint(equalTo: bar.bottomAnchor, constant: -2),
 
             progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             progressView.heightAnchor.constraint(equalToConstant: 2)
         ])
+    }
+
+    private func makeToolbarButton(icon: String, action: Selector) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: icon), for: .normal)
+        button.tintColor = Theme.textDim
+        button.addTarget(self, action: action, for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 44),
+            button.heightAnchor.constraint(equalToConstant: 44)
+        ])
+        return button
     }
 
     private func observeWebView() {
@@ -342,7 +349,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         errorDetailLabel.text = message + "\n请检查网络 / 代理，或稍后重试"
         errorOverlay.isHidden = false
         view.bringSubviewToFront(errorOverlay)
-        view.bringSubviewToFront(toolbar)
+        view.bringSubviewToFront(toolbarBar)
     }
 
     private func hideError() {
@@ -365,8 +372,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         if loading {
             progressView.setProgress(0, animated: false)
         }
-        reloadButton.image = UIImage(systemName: loading ? "xmark" : "arrow.clockwise")
-        reloadButton.action = loading ? #selector(stopLoading) : #selector(reload)
+        reloadButton.setImage(UIImage(systemName: loading ? "xmark" : "arrow.clockwise"), for: .normal)
     }
 
     @objc private func stopLoading() {
@@ -394,7 +400,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         toolbarHidden = hidden
         ignoreScrollUntil = Date().addingTimeInterval(0.35)
         if !hidden {
-            toolbar.isHidden = false
+            toolbarBar.isHidden = false
         }
         if hidden {
             webBottomToToolbar.isActive = false
@@ -405,15 +411,15 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         }
 
         let animations = {
-            self.toolbar.transform = hidden
-                ? CGAffineTransform(translationX: 0, y: self.toolbar.bounds.height + 40)
+            self.toolbarBar.transform = hidden
+                ? CGAffineTransform(translationX: 0, y: self.toolbarBar.bounds.height + 40)
                 : .identity
             self.view.layoutIfNeeded()
         }
         let completion: (Bool) -> Void = { _ in
             if hidden {
-                self.toolbar.isHidden = true
-                self.toolbar.transform = .identity
+                self.toolbarBar.isHidden = true
+                self.toolbarBar.transform = .identity
             }
         }
         if animated {
@@ -433,23 +439,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     // MARK: - 边缘手势
 
-    @objc private func handleEdgePan(_ gesture: UIScreenEdgePanGestureRecognizer) {
-        guard gesture.state == .ended else { return }
-        let translation = gesture.translation(in: view)
-        guard translation.x > 70,
-              abs(translation.x) > abs(translation.y) * 1.2 else { return }
-        if webView.canGoBack {
-            Haptics.tap()
-            webView.goBack()
-        } else {
-            navigationController?.popViewController(animated: true)
-        }
-    }
-
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                           shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        return true
-    }
+    // 网页回退使用 WKWebView 自带的跟手手势（allowsBackForwardNavigationGestures）
+    // 没有上一页时不再自定义 pop，避免误触直接退出；退出请点左上角返回。
 
     // MARK: - 广告拦截
 
@@ -595,6 +586,14 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     @objc private func reload() {
         Haptics.tap()
         webView.reload()
+    }
+
+    @objc private func reloadOrStop() {
+        if isLoading {
+            stopLoading()
+        } else {
+            reload()
+        }
     }
 
     @objc private func goHome() {
