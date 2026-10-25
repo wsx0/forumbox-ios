@@ -668,6 +668,16 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
            !pageTitle.isEmpty {
             title = pageTitle
         }
+        if videoMode,
+           let favorite = VideoFavoriteStore.shared.item(for: currentPageURL),
+           (favorite.thumbnailURL ?? "").isEmpty {
+            captureVideoMetadata { [weak self] pageTitle, image in
+                guard let self = self else { return }
+                VideoFavoriteStore.shared.updateMetadata(url: self.currentPageURL,
+                                                         title: pageTitle,
+                                                         thumbnailURL: image)
+            }
+        }
         if !hasFadedInContent {
             hasFadedInContent = true
             UIView.animate(withDuration: 0.25) {

@@ -58,6 +58,17 @@ final class VideoFavoriteStore {
         return item
     }
 
+    func updateMetadata(url: String, title: String, thumbnailURL: String?) {
+        guard let index = items.firstIndex(where: { $0.url == url }) else { return }
+        if !title.isEmpty {
+            items[index].title = title
+        }
+        if let thumbnailURL = thumbnailURL, !thumbnailURL.isEmpty {
+            items[index].thumbnailURL = thumbnailURL
+        }
+        persist()
+    }
+
     func remove(id: UUID) {
         items.removeAll { $0.id == id }
         persist()
