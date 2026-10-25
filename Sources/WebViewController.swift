@@ -1,7 +1,7 @@
 import UIKit
 import WebKit
 
-final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, UIGestureRecognizerDelegate {
 
     private let site: Site
     private var webView: WKWebView!
@@ -84,8 +84,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         refresh.addTarget(self, action: #selector(pulledToRefresh), for: .valueChanged)
         webView.scrollView.refreshControl = refresh
 
-        // 边缘右滑返回列表（和系统 App 一致）
-        navigationController?.interactivePopGestureRecognizer?.isEnabled = true
+        // 左边缘右滑：先在网页里返回上一页；没有上一页才退回论坛列表
+        let edgePan = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handleEdgePan(_:)))
+        edgePan.edges = .left
+        edgePan.delegate = self
+        view.addGestureRecognizer(edgePan)
 
         // 收藏在其他页面被修改时，同步星标
         favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
@@ -112,6 +115,13 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         updateFavoriteButton()
+        // 交给自定义边缘手势处理：系统 pop 手势会把整个页面直接弹回论坛列表
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
@@ -419,6 +429,26 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         Haptics.tap()
         setLoading(true)
         webView.reload()
+    }
+
+    // MARK: - 边缘手势
+
+    @objc private func handleEdgePan(_ gesture: UIScreenEdgePanGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        let translation = gesture.translation(in: view)
+        guard translation.x > 70,
+              abs(translation.x) > abs(translation.y) * 1.2 else { return }
+        if webView.canGoBack {
+            Haptics.tap()
+            webView.goBack()
+        } else {
+            navigationController?.popViewController(animated: true)
+        }
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
 
     // MARK: - 广告拦截
