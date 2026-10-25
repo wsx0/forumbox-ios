@@ -5,7 +5,6 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     private let site: Site
     private let videoMode: Bool
-    var onTitleChange: ((String) -> Void)?
     private var webView: WKWebView!
     private var contentController: WKUserContentController!
     private let progressView = UIProgressView(progressViewStyle: .bar)
@@ -664,7 +663,6 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
            let pageTitle = webView.title?.trimmingCharacters(in: .whitespacesAndNewlines),
            !pageTitle.isEmpty {
             title = pageTitle
-            onTitleChange?(pageTitle)
         }
         if !hasFadedInContent {
             hasFadedInContent = true
