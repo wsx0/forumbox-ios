@@ -138,7 +138,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         config.websiteDataStore = .default()   // 持久化 Cookie，登录态保留
         config.allowsInlineMediaPlayback = true
         if videoMode {
-            // 视频兼容模式：只保留内联播放，避免 PiP / AirPlay / 自动播放在 iOS 26 WebKit 上触发崩溃
+            // 视频兼容模式：明确关闭 PiP / AirPlay / 自动播放，避免 iOS 26 WebKit 播放崩溃
+            config.mediaTypesRequiringUserActionForPlayback = .all
+            config.allowsPictureInPictureMediaPlayback = false
+            config.allowsAirPlayForMediaPlayback = false
         } else {
             config.mediaTypesRequiringUserActionForPlayback = []
             config.allowsPictureInPictureMediaPlayback = true
