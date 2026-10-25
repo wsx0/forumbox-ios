@@ -59,6 +59,7 @@ final class AppSettings {
     private let fontChoiceKey = "fb_font_choice"
     private let fontScaleKey = "fb_font_scale"
     private let videoSystemPlayerKey = "fb_video_system_player"
+    private let appNameKey = "fb_app_name"
     private let backgroundFileName = "fb_background.jpg"
     private var cachedBackground: UIImage?
     private var didLoadBackground = false
@@ -107,6 +108,17 @@ final class AppSettings {
 
     var videoPlayerName: String {
         return videoUseSystemPlayer ? "系统播放器" : "内置播放器（去广告）"
+    }
+
+    /// App 内显示名称（桌面名称由 iOS 固定）
+    var appDisplayName: String {
+        get {
+            let value = UserDefaults.standard.string(forKey: appNameKey) ?? ""
+            return value.isEmpty ? "论坛盒子" : value
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: appNameKey)
+        }
     }
 
     // MARK: - 背景图

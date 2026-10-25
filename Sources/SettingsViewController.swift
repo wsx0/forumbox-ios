@@ -5,6 +5,8 @@ import PhotosUI
 final class SettingsViewController: UITableViewController, ScrollToTopable {
 
     private enum Row {
+        case appIcon
+        case appName
         case theme
         case font
         case fontSize
@@ -79,7 +81,8 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerTitleLabel)
 
-        headerSubtitleLabel.text = "外观、视频与站点"
+        headerSubtitleLabel.text = "\(AppSettings.shared.appDisplayName) · 外观、视频与站点"
+        headerSubtitleLabel.lineBreakMode = .byTruncatingTail
         headerSubtitleLabel.font = Theme.font(12, .regular)
         headerSubtitleLabel.textColor = Theme.textDim
         headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -99,12 +102,13 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
     }
 
     private func rebuildRows() {
+        let personalization: [Row] = [.appIcon, .appName]
         var appearance: [Row] = [.theme, .font, .fontSize, .background]
         if AppSettings.shared.hasBackground {
             appearance.append(.removeBackground)
         }
         appearance.append(.resetAppearance)
-        rows = [appearance, [.videoPlayer], [.manageVideoSites, .manageSites], [.version]]
+        rows = [personalization, appearance, [.videoPlayer], [.manageVideoSites, .manageSites], [.version]]
     }
 
     // MARK: - 表格
@@ -119,11 +123,16 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch section {
-        case 0: return "外观"
-        case 1: return "视频"
-        case 2: return "站点"
+        case 0: return "个性化"
+        case 1: return "外观"
+        case 2: return "视频"
+        case 3: return "站点"
         default: return "关于"
         }
+    }
+
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        return section == 0 ? "桌面图标名称由 iOS 固定；这里的名称只影响 App 内显示。" : nil
     }
 
     override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
@@ -137,6 +146,16 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
                                                  for: indexPath) as! SettingRowCell
         let row = rows[indexPath.section][indexPath.row]
         switch row {
+        case .appIcon:
+            cell.configure(title: "软件图标",
+                           value: AppIcons.currentName,
+                           showsChevron: true,
+                           icon: "app.badge")
+        case .appName:
+            cell.configure(title: "软件名称",
+                           value: AppSettings.shared.appDisplayName,
+                           showsChevron: true,
+                           icon: "textformat.abc")
         case .theme:
             cell.configure(title: "主题", value: ThemeManager.shared.style.displayName, showsChevron: true, icon: "paintpalette.fill")
         case .font:
@@ -176,6 +195,10 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         tableView.deselectRow(at: indexPath, animated: true)
         let row = rows[indexPath.section][indexPath.row]
         switch row {
+        case .appIcon:
+            navigationController?.pushViewController(AppIconPickerViewController(), animated: true)
+        case .appName:
+            presentNamePicker()
         case .theme:
             ThemePicker.present(from: self, sourceView: tableView.cellForRow(at: indexPath) ?? view)
         case .font:
@@ -204,6 +227,51 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
     }
 
     // MARK: - 选择器
+
+    private func presentNamePicker() {
+        let presets = ["论坛盒子", "盒子", "小盒子", "夜航盒子", "樱花盒子", "奶油盒子", "赛博盒子"]
+        let sheet = UIAlertController(title: "软件名称",
+                                      message: "App 内显示名称；桌面图标下方名称由 iOS 固定。",
+                                      preferredStyle: .actionSheet)
+        for name in presets {
+            let title = name == AppSettings.shared.appDisplayName ? "\(name)  ✓" : name
+            sheet.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                self?.applyAppName(name)
+            })
+        }
+        sheet.addAction(UIAlertAction(title: "自定义…", style: .default) { [weak self] _ in
+            self?.presentCustomName()
+        })
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        if let pop = sheet.popoverPresentationController {
+            pop.sourceView = view
+            pop.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+        }
+        present(sheet, animated: true)
+    }
+
+    private func presentCustomName() {
+        let alert = UIAlertController(title: "自定义软件名称", message: nil, preferredStyle: .alert)
+        alert.addTextField { field in
+            field.placeholder = "输入名称"
+            field.text = AppSettings.shared.appDisplayName
+        }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "保存", style: .default) { [weak self, weak alert] _ in
+            let name = alert?.textFields?.first?.text?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard !name.isEmpty else { return }
+            self?.applyAppName(String(name.prefix(12)))
+        })
+        present(alert, animated: true)
+    }
+
+    private func applyAppName(_ name: String) {
+        AppSettings.shared.appDisplayName = name
+        headerSubtitleLabel.text = "\(name) · 外观、视频与站点"
+        tableView.reloadData()
+        Haptics.success()
+    }
 
     private func presentVideoPlayerPicker() {
         let sheet = UIAlertController(title: "视频打开方式",
