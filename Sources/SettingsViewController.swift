@@ -10,6 +10,7 @@ final class SettingsViewController: UITableViewController {
         case fontSize
         case background
         case removeBackground
+        case resetAppearance
         case manageSites
         case version
     }
@@ -63,6 +64,8 @@ final class SettingsViewController: UITableViewController {
         return .portrait
     }
 
+    override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
+
     private func setupHeader() {        let width = max(tableView.bounds.width, view.bounds.width)
         let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 58))
         header.backgroundColor = .clear
@@ -97,6 +100,7 @@ final class SettingsViewController: UITableViewController {
         if AppSettings.shared.hasBackground {
             appearance.append(.removeBackground)
         }
+        appearance.append(.resetAppearance)
         rows = [appearance, [.manageSites], [.version]]
     }
 
@@ -141,6 +145,8 @@ final class SettingsViewController: UITableViewController {
                            showsChevron: true)
         case .removeBackground:
             cell.configure(title: "移除背景图", value: nil, showsChevron: false, destructive: true)
+        case .resetAppearance:
+            cell.configure(title: "恢复默认外观", value: nil, showsChevron: false, destructive: true)
         case .manageSites:
             cell.configure(title: "站点管理", value: "\(Sites.all.count) 个站点", showsChevron: true)
         case .version:
@@ -166,6 +172,8 @@ final class SettingsViewController: UITableViewController {
         case .removeBackground:
             AppSettings.shared.clearBackground()
             ThemePicker.rebuildRoot(from: self)
+        case .resetAppearance:
+            confirmResetAppearance()
         case .manageSites:
             let controller = SitesViewController(style: .insetGrouped)
             controller.managementMode = true
@@ -211,6 +219,21 @@ final class SettingsViewController: UITableViewController {
             pop.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
         }
         present(sheet, animated: true)
+    }
+
+    private func confirmResetAppearance() {
+        let alert = UIAlertController(title: "恢复默认外观？",
+                                      message: "主题、字体、字号、背景图都会恢复默认。",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "恢复", style: .destructive) { [weak self] _ in
+            ThemeManager.shared.setStyle(.southPlus)
+            AppSettings.shared.fontChoice = .automatic
+            AppSettings.shared.fontScale = 1.0
+            AppSettings.shared.clearBackground()
+            ThemePicker.rebuildRoot(from: self)
+        })
+        present(alert, animated: true)
     }
 
     private func presentPhotoPicker() {

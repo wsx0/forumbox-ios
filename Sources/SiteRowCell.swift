@@ -82,15 +82,15 @@ final class SiteRowCell: UITableViewCell {
         configure(emoji: site.emoji, title: site.name, subtitle: site.note)
     }
 
-    func configure(emoji: String, title: String, subtitle: String) {
-        applyIdentity(emoji: emoji, title: title)
+    func configure(emoji: String, title: String, subtitle: String, preferEmoji: Bool = false) {
+        applyIdentity(emoji: emoji, title: title, preferEmoji: preferEmoji)
         titleLabel.text = title
         subtitleLabel.text = subtitle
         subtitleLabel.isHidden = subtitle.isEmpty
     }
 
-    private func applyIdentity(emoji: String, title: String) {
-        if Theme.isPlainStyle {
+    private func applyIdentity(emoji: String, title: String, preferEmoji: Bool) {
+        if Theme.isPlainStyle && !preferEmoji {
             emojiLabel.text = title.identityInitial
             emojiLabel.font = Theme.rounded(17, .semibold)
             emojiLabel.textColor = Theme.textDim

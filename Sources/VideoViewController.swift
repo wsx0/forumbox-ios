@@ -7,8 +7,10 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
     private let headerSubtitleLabel = UILabel()
     private let inputContainer = UIView()
     private let inputField = UITextField()
+    private let pasteButton = UIButton(type: .system)
     private let openButton = UIButton(type: .system)
     private let emptyLabel = UILabel()
+    private lazy var clearButton = UIButton(type: .system)
 
     private let sites = VideoSites.all
     private var entries: [VideoEntry] = []
@@ -97,6 +99,12 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
         inputField.translatesAutoresizingMaskIntoConstraints = false
         inputContainer.addSubview(inputField)
 
+        pasteButton.setImage(UIImage(systemName: "doc.on.clipboard"), for: .normal)
+        pasteButton.tintColor = Theme.textDim
+        pasteButton.addTarget(self, action: #selector(pasteFromClipboard), for: .touchUpInside)
+        pasteButton.translatesAutoresizingMaskIntoConstraints = false
+        inputContainer.addSubview(pasteButton)
+
         var config = UIButton.Configuration.filled()
         config.title = "打开"
         config.baseBackgroundColor = Theme.accent
@@ -129,7 +137,12 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
 
             inputField.leadingAnchor.constraint(equalTo: inputContainer.leadingAnchor, constant: 12),
             inputField.centerYAnchor.constraint(equalTo: inputContainer.centerYAnchor),
-            inputField.trailingAnchor.constraint(equalTo: openButton.leadingAnchor, constant: -8),
+            inputField.trailingAnchor.constraint(equalTo: pasteButton.leadingAnchor, constant: -4),
+
+            pasteButton.centerYAnchor.constraint(equalTo: inputContainer.centerYAnchor),
+            pasteButton.widthAnchor.constraint(equalToConstant: 30),
+            pasteButton.heightAnchor.constraint(equalToConstant: 34),
+            pasteButton.trailingAnchor.constraint(equalTo: openButton.leadingAnchor, constant: -2),
 
             openButton.trailingAnchor.constraint(equalTo: inputContainer.trailingAnchor, constant: -5),
             openButton.centerYAnchor.constraint(equalTo: inputContainer.centerYAnchor),
@@ -149,21 +162,60 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
     }
 
     private func updateFooter() {
-        guard entries.isEmpty else {
-            tableView.tableFooterView = nil
+        if entries.isEmpty {
+            let footer = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 110))
+            footer.backgroundColor = .clear
+            emptyLabel.text = "还没有观看记录\n点上面的站点或粘贴链接开始观看"
+            emptyLabel.numberOfLines = 0
+            emptyLabel.textAlignment = .center
+            emptyLabel.font = Theme.font(13, .regular)
+            emptyLabel.textColor = Theme.textDim
+            emptyLabel.frame = footer.bounds
+            emptyLabel.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            footer.addSubview(emptyLabel)
+            tableView.tableFooterView = footer
+        } else {
+            let footer = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 56))
+            footer.backgroundColor = .clear
+            var config = UIButton.Configuration.plain()
+            config.title = "清空观看记录"
+            config.baseForegroundColor = Theme.accent
+            config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+                var out = incoming
+                out.font = Theme.rounded(13, .medium)
+                return out
+            }
+            clearButton.configuration = config
+            clearButton.removeTarget(nil, action: nil, for: .allEvents)
+            clearButton.addTarget(self, action: #selector(confirmClearHistory), for: .touchUpInside)
+            clearButton.frame = footer.bounds
+            clearButton.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            footer.addSubview(clearButton)
+            tableView.tableFooterView = footer
+        }
+    }
+
+    @objc private func pasteFromClipboard() {
+        guard let text = UIPasteboard.general.string?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+            !text.isEmpty else {
+            presentNotice("剪贴板里没有链接")
             return
         }
-        let footer = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 110))
-        footer.backgroundColor = .clear
-        emptyLabel.text = "还没有观看记录\n点上面的站点或粘贴链接开始观看"
-        emptyLabel.numberOfLines = 0
-        emptyLabel.textAlignment = .center
-        emptyLabel.font = Theme.font(13, .regular)
-        emptyLabel.textColor = Theme.textDim
-        emptyLabel.frame = footer.bounds
-        emptyLabel.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        footer.addSubview(emptyLabel)
-        tableView.tableFooterView = footer
+        inputField.text = text
+        Haptics.tap()
+    }
+
+    @objc private func confirmClearHistory() {
+        let alert = UIAlertController(title: "清空观看记录？",
+                                      message: "只清空最近观看列表，不影响视频站点。",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "清空", style: .destructive) { [weak self] _ in
+            VideoHistoryStore.shared.clear()
+            self?.reload()
+        })
+        present(alert, animated: true)
     }
 
     // MARK: - 打开视频
@@ -238,7 +290,10 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
             let site = sites[indexPath.row]
             let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
                                                      for: indexPath) as! SiteRowCell
-            cell.configure(emoji: site.emoji, title: site.name, subtitle: site.note)
+            cell.configure(emoji: site.emoji,
+                           title: site.name,
+                           subtitle: site.note,
+                           preferEmoji: true)
             return cell
         }
         let cell = tableView.dequeueReusableCell(withIdentifier: VideoRowCell.reuseID,
