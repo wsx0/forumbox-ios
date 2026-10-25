@@ -1,7 +1,7 @@
 import UIKit
 
 /// 收藏 Tab：只有收藏夹（收藏只保存在收藏夹里，不再显示最近收藏 / 未分类）
-final class FavoritesViewController: UITableViewController {
+final class FavoritesViewController: UITableViewController, ScrollToTopable {
 
     private lazy var addFolderButton = makeHeaderIconButton(systemName: "plus",
                                                             action: #selector(addFolder))

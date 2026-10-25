@@ -1,7 +1,7 @@
 import UIKit
 
 /// 视频 Tab：粘贴视频链接，在 App 内用 WKWebView 播放网页视频
-final class VideoViewController: UITableViewController, UITextFieldDelegate {
+final class VideoViewController: UITableViewController, UITextFieldDelegate, ScrollToTopable {
 
     private let headerTitleLabel = UILabel()
     private let headerSubtitleLabel = UILabel()
@@ -186,7 +186,7 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
                 return out
             }
             clearButton.configuration = config
-            clearButton.removeTarget(nil, action: nil, for: .allEvents)
+            clearButton.removeTarget(self, action: #selector(confirmClearHistory), for: .touchUpInside)
             clearButton.addTarget(self, action: #selector(confirmClearHistory), for: .touchUpInside)
             clearButton.frame = footer.bounds
             clearButton.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -247,6 +247,7 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
     }
 
     private func openVideo(url: URL, title: String? = nil) {
+        guard navigationController?.topViewController === self else { return }
         Haptics.tap()
         let host = url.host ?? "视频"
         let name = title ?? host

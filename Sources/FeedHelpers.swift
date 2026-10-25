@@ -15,6 +15,18 @@ extension UIViewController {
     }
 }
 
+/// 重新点击当前 Tab 时回到顶部
+protocol ScrollToTopable {
+    func scrollToTop()
+}
+
+extension ScrollToTopable where Self: UITableViewController {
+    func scrollToTop() {
+        let top = -tableView.adjustedContentInset.top
+        tableView.setContentOffset(CGPoint(x: 0, y: top), animated: true)
+    }
+}
+
 /// URL 展示（去掉协议头）
 extension String {
     /// 列表头像用的首字（跳过【】括号等符号）

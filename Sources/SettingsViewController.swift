@@ -2,7 +2,7 @@ import UIKit
 import PhotosUI
 
 /// 设置页：外观（主题 / 字体 / 字号 / 背景图）、站点管理、关于
-final class SettingsViewController: UITableViewController {
+final class SettingsViewController: UITableViewController, ScrollToTopable {
 
     private enum Row {
         case theme

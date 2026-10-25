@@ -1,7 +1,7 @@
 import UIKit
 
 /// 论坛页：站点列表 + 一键签到 / 115 入口 + 站点管理
-final class SitesViewController: UITableViewController {
+final class SitesViewController: UITableViewController, ScrollToTopable {
 
     /// 从设置页进入的站点管理模式（隐藏签到/115 快捷按钮）
     var managementMode = false

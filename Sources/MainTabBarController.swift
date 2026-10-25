@@ -70,4 +70,17 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
         UserDefaults.standard.set(selectedIndex, forKey: lastTabKey)
         Haptics.tap()
     }
+
+    func tabBarController(_ tabBarController: UITabBarController,
+                          shouldSelect viewController: UIViewController) -> Bool {
+        if viewController === selectedViewController {
+            if let nav = viewController as? UINavigationController,
+               let top = nav.topViewController as? ScrollToTopable {
+                top.scrollToTop()
+            }
+            Haptics.tap()
+            return false
+        }
+        return true
+    }
 }
