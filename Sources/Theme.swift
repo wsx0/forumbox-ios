@@ -252,6 +252,10 @@ enum Theme {
     /// 强调色上应该用什么文字颜色
     static var onAccent: UIColor {
         if palette.key == "southPlus" { return .white }
+        if palette.key == "southPlusDark" {
+            // 参考 App 在暗色模式用深色字压在浅红主按钮上（对比度更高）
+            return UIColor(red: 58/255, green: 13/255, blue: 22/255, alpha: 1)
+        }
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         if palette.accent.getRed(&r, green: &g, blue: &b, alpha: &a) {
             let luminance = 0.299 * r + 0.587 * g + 0.114 * b

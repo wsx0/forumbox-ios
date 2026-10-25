@@ -42,7 +42,7 @@ enum WebScripts {
                 btn.textContent = 'ED2K · ' + links.length + ' → 115';
             }
             refresh();
-            setInterval(refresh, 2500);
+            setInterval(refresh, 4000);
         } catch (e) {}
     })();
     """

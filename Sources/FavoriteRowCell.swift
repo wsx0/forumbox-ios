@@ -17,7 +17,7 @@ final class FavoriteRowCell: UITableViewCell {
         contentView.backgroundColor = Theme.card
         selectionStyle = .default
         let selected = UIView()
-        selected.backgroundColor = Theme.emojiBg
+        selected.backgroundColor = Theme.tonal
         selectedBackgroundView = selected
 
         emojiBackground.backgroundColor = Theme.emojiBg

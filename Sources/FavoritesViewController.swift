@@ -182,7 +182,7 @@ final class FavoritesViewController: UITableViewController {
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
+        return recentItems.isEmpty ? 1 : 2
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -196,7 +196,7 @@ final class FavoritesViewController: UITableViewController {
         if section == 0 {
             return "收藏夹"
         }
-        return "最近收藏（\(recentItems.count)）"
+        return recentItems.isEmpty ? nil : "最近收藏（\(recentItems.count)）"
     }
 
     override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {

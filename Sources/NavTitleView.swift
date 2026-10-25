@@ -5,6 +5,7 @@ final class NavTitleView: UIView {
 
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
+    private let stack = UIStackView()
 
     init(title: String, subtitle: String?) {
         super.init(frame: .zero)
@@ -17,11 +18,12 @@ final class NavTitleView: UIView {
         subtitleLabel.textColor = Theme.textDim
         subtitleLabel.lineBreakMode = .byTruncatingTail
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
         stack.axis = .vertical
         stack.spacing = 0
         stack.alignment = .leading
         stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.addArrangedSubview(titleLabel)
+        stack.addArrangedSubview(subtitleLabel)
         addSubview(stack)
 
         NSLayoutConstraint.activate([
@@ -38,6 +40,14 @@ final class NavTitleView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override var intrinsicContentSize: CGSize {
+        let titleSize = titleLabel.intrinsicContentSize
+        let subtitleSize = subtitleLabel.isHidden ? .zero : subtitleLabel.intrinsicContentSize
+        let width = max(titleSize.width, subtitleSize.width)
+        let height = titleSize.height + (subtitleLabel.isHidden ? 0 : subtitleSize.height + stack.spacing)
+        return CGSize(width: ceil(width) + 1, height: ceil(height))
+    }
+
     func update(title: String? = nil, subtitle: String? = nil) {
         if let title = title {
             titleLabel.text = title
@@ -45,5 +55,6 @@ final class NavTitleView: UIView {
         subtitleLabel.text = subtitle
         subtitleLabel.isHidden = (subtitle ?? "").isEmpty
         invalidateIntrinsicContentSize()
+        setNeedsLayout()
     }
 }
