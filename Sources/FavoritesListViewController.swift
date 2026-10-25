@@ -1,13 +1,18 @@
 import UIKit
 
-/// 收藏夹详情：每页 10 条，底部页码分页
-final class FavoritesListViewController: UITableViewController, UISearchResultsUpdating {
+/// 收藏夹详情：每页 10 条，底部固定分页栏，支持搜索
+final class FavoritesListViewController: UIViewController,
+                                        UITableViewDataSource,
+                                        UITableViewDelegate,
+                                        UISearchResultsUpdating,
+                                        ScrollToTopable {
 
     private let folderId: UUID?
     private let folderTitleText: String
     private var items: [FavoriteItem] = []
     private var filteredItems: [FavoriteItem] = []
     private let emptyHint = UILabel()
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private let searchController = UISearchController(searchResultsController: nil)
     private var searchText = ""
 
@@ -23,7 +28,7 @@ final class FavoritesListViewController: UITableViewController, UISearchResultsU
     init(folderId: UUID?, folderTitle: String) {
         self.folderId = folderId
         self.folderTitleText = folderTitle
-        super.init(style: .insetGrouped)
+        super.init(nibName: nil, bundle: nil)
     }
 
     required init?(coder: NSCoder) {
@@ -34,44 +39,8 @@ final class FavoritesListViewController: UITableViewController, UISearchResultsU
         super.viewDidLoad()
         title = folderTitleText
         view.backgroundColor = Theme.bgTop
-        tableView.backgroundColor = .clear
-        tableView.separatorStyle = .singleLine
-        tableView.separatorColor = Theme.cardBorder
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
-        tableView.rowHeight = 82 * AppSettings.shared.fontScale
-        tableView.sectionHeaderTopPadding = 8
-        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
-        tableView.register(FavoriteRowCell.self, forCellReuseIdentifier: FavoriteRowCell.reuseID)
-        navigationItem.backButtonDisplayMode = .minimal
-
-        searchController.searchResultsUpdater = self
-        searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.placeholder = "搜索标题 / 站点"
-        searchController.searchBar.tintColor = Theme.accent
-        searchController.searchBar.searchTextField.backgroundColor = Theme.card
-        searchController.searchBar.searchTextField.textColor = Theme.text
-        searchController.searchBar.searchTextField.font = Theme.font(14, .regular)
-        searchController.searchBar.searchTextField.attributedPlaceholder = NSAttributedString(
-            string: "搜索标题 / 站点",
-            attributes: [
-                .foregroundColor: Theme.textFaint,
-                .font: Theme.font(14, .regular)
-            ]
-        )
-        navigationItem.searchController = searchController
-        navigationItem.hidesSearchBarWhenScrolling = false
-        definesPresentationContext = true
-
-        let background = Theme.makeBackgroundView(tableView.bounds)
-        tableView.backgroundView = background
-        emptyHint.text = "这个收藏夹还是空的"
-        emptyHint.textAlignment = .center
-        emptyHint.textColor = Theme.textFaint
-        emptyHint.font = Theme.font(13, .regular)
-        emptyHint.frame = background.bounds
-        emptyHint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        background.addSubview(emptyHint)
-
+        setupTable()
+        setupSearch()
         setupPagination()
     }
 
@@ -92,6 +61,67 @@ final class FavoritesListViewController: UITableViewController, UISearchResultsU
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         return .portrait
+    }
+
+    func scrollToTop() {
+        let top = -tableView.adjustedContentInset.top
+        tableView.setContentOffset(CGPoint(x: 0, y: top), animated: true)
+    }
+
+    // MARK: - 基础视图
+
+    private func setupTable() {
+        tableView.backgroundColor = .clear
+        tableView.separatorStyle = .singleLine
+        tableView.separatorColor = Theme.cardBorder
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
+        tableView.rowHeight = 82 * AppSettings.shared.fontScale
+        tableView.sectionHeaderTopPadding = 8
+        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
+        tableView.keyboardDismissMode = .onDrag
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.register(FavoriteRowCell.self, forCellReuseIdentifier: FavoriteRowCell.reuseID)
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
+
+        let background = Theme.makeBackgroundView(tableView.bounds)
+        tableView.backgroundView = background
+        emptyHint.text = "这个收藏夹还是空的"
+        emptyHint.numberOfLines = 0
+        emptyHint.textAlignment = .center
+        emptyHint.textColor = Theme.textFaint
+        emptyHint.font = Theme.font(13, .regular)
+        emptyHint.frame = background.bounds
+        emptyHint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        background.addSubview(emptyHint)
+
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+
+    private func setupSearch() {
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "搜索标题 / 站点"
+        searchController.searchBar.tintColor = Theme.accent
+        searchController.searchBar.searchTextField.backgroundColor = Theme.card
+        searchController.searchBar.searchTextField.textColor = Theme.text
+        searchController.searchBar.searchTextField.font = Theme.font(14, .regular)
+        searchController.searchBar.searchTextField.attributedPlaceholder = NSAttributedString(
+            string: "搜索标题 / 站点",
+            attributes: [
+                .foregroundColor: Theme.textFaint,
+                .font: Theme.font(14, .regular)
+            ]
+        )
+        navigationItem.searchController = searchController
+        navigationItem.hidesSearchBarWhenScrolling = false
+        definesPresentationContext = true
     }
 
     // MARK: - 分页
@@ -247,7 +277,6 @@ final class FavoritesListViewController: UITableViewController, UISearchResultsU
 
     // MARK: - 数据
 
-
     private func loadItems(resetPage: Bool = false) {
         items = FavoriteStore.shared.items(in: folderId)
         applyFilter(resetPage: resetPage)
@@ -304,11 +333,11 @@ final class FavoritesListViewController: UITableViewController, UISearchResultsU
 
     // MARK: - 表格
 
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return pageItems.count
     }
 
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let item = pageItems[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: FavoriteRowCell.reuseID,
                                                  for: indexPath) as! FavoriteRowCell
@@ -318,7 +347,7 @@ final class FavoritesListViewController: UITableViewController, UISearchResultsU
         return cell
     }
 
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let page = pageItems
         guard indexPath.row < page.count else { return }
@@ -328,8 +357,8 @@ final class FavoritesListViewController: UITableViewController, UISearchResultsU
             animated: true)
     }
 
-    override func tableView(_ tableView: UITableView,
-                            trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+    func tableView(_ tableView: UITableView,
+                   trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let page = pageItems
         guard indexPath.row < page.count else { return nil }
         let item = page[indexPath.row]
