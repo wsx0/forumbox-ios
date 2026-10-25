@@ -111,7 +111,7 @@ final class SitesViewController: UITableViewController {
 
     private func updateHeaderHint() {
         let signCount = Sites.all.filter { $0.signURL != nil }.count
-        headerHint.text = "\(Sites.all.count) 个论坛 · 可签到 \(signCount) 个 · 长按站点可签到 / 编辑"
+        headerHint.text = "\(Sites.all.count) 个论坛 · 可签到 \(signCount) 个"
     }
 
     // MARK: - 动作
@@ -145,6 +145,9 @@ final class SitesViewController: UITableViewController {
         setSignRunning(true, message: "签到中…")
         let runner = SignInRunner()
         signRunner = runner
+        runner.onProgress = { [weak self] current, total in
+            self?.setSignRunning(true, message: "签到中 \(current)/\(total)")
+        }
         runner.run(sites: sites) { [weak self] results in
             guard let self = self else { return }
             self.signRunner = nil

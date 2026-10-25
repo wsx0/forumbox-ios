@@ -17,12 +17,17 @@ final class SignInRunner: NSObject, WKNavigationDelegate {
     private var completion: (([SignResult]) -> Void)?
     private var timeoutWork: DispatchWorkItem?
     private var isRunning = false
+    private var currentToken = UUID()
+
+    /// 进度回调（当前第几个 / 总数）
+    var onProgress: ((Int, Int) -> Void)?
 
     private let scanJS = """
     (function () {
         try {
             var body = document.body ? (document.body.innerText || '') : '';
             if (/已签到|已经签到|今日已签到|签到成功|已打卡|签到完成/.test(body)) return 'done';
+            if (/Just a moment|Checking your browser|安全验证|人机验证|请稍候/.test(body)) return 'challenge';
             if (/请先登录|需要登录|登录后|您还未登录|未登录/.test(body)) return 'login';
             var els = document.querySelectorAll('a,button,input,div,span');
             for (var i = 0; i < els.length; i++) {
@@ -69,7 +74,7 @@ final class SignInRunner: NSObject, WKNavigationDelegate {
     private func setupWebView() {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
-        let view = WKWebView(frame: CGRect(x: 0, y: 0, width: 1, height: 1), configuration: config)
+        let view = WKWebView(frame: CGRect(x: -10, y: -10, width: 1, height: 1), configuration: config)
         view.navigationDelegate = self
         view.customUserAgent = UserAgents.mobileSafari
         view.isUserInteractionEnabled = false
@@ -102,14 +107,18 @@ final class SignInRunner: NSObject, WKNavigationDelegate {
             loadNext()
             return
         }
+        currentToken = UUID()
+        onProgress?(index + 1, sites.count)
         startTimeout()
         webView?.load(URLRequest(url: url))
     }
 
     private func startTimeout() {
         timeoutWork?.cancel()
+        let token = currentToken
         let work = DispatchWorkItem { [weak self] in
-            self?.completeCurrent(status: "超时（可能需要验证）")
+            guard let self = self, self.currentToken == token else { return }
+            self.completeCurrent(status: "超时（可能需要验证）", token: token)
         }
         timeoutWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 18, execute: work)
@@ -120,11 +129,12 @@ final class SignInRunner: NSObject, WKNavigationDelegate {
         timeoutWork = nil
     }
 
-    private func completeCurrent(status: String) {
-        guard let site = currentSite else { return }
+    private func completeCurrent(status: String, token: UUID) {
+        guard token == currentToken, let site = currentSite else { return }
         cancelTimeout()
         results.append(SignResult(site: site, status: status))
         currentSite = nil
+        currentToken = UUID()
         index += 1
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.loadNext()
@@ -147,43 +157,54 @@ final class SignInRunner: NSObject, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         cancelTimeout()
+        let token = currentToken
+        let siteName = currentSite?.name
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.evaluateScan()
+            self?.evaluateScan(token: token, siteName: siteName)
         }
     }
 
-    private func evaluateScan() {
-        guard isRunning else { return }
+    private func evaluateScan(token: UUID, siteName: String?) {
+        guard isRunning,
+              let name = siteName,
+              currentSite?.name == name,
+              token == currentToken else { return }
         webView?.evaluateJavaScript(scanJS) { [weak self] result, _ in
-            guard let self = self, self.currentSite != nil else { return }
+            guard let self = self,
+                  self.currentSite?.name == name,
+                  token == self.currentToken else { return }
             let value = (result as? String) ?? "notfound"
             switch value {
             case "done":
-                self.completeCurrent(status: "已签到")
+                self.completeCurrent(status: "已签到", token: token)
+            case "challenge":
+                self.completeCurrent(status: "需要验证", token: token)
             case "login":
-                self.completeCurrent(status: "需要登录")
+                self.completeCurrent(status: "需要登录", token: token)
             case "clicked":
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                    self.verifySignResult()
+                    self.verifySignResult(token: token, siteName: name)
                 }
             default:
-                self.completeCurrent(status: "未找到签到入口")
+                self.completeCurrent(status: "未找到签到入口", token: token)
             }
         }
     }
 
-    private func verifySignResult() {
-        guard isRunning, currentSite != nil else { return }
+    private func verifySignResult(token: UUID, siteName: String) {
+        guard isRunning, currentSite?.name == siteName, token == currentToken else { return }
         webView?.evaluateJavaScript(verifyJS) { [weak self] result, _ in
-            guard let self = self else { return }
+            guard let self = self,
+                  self.currentSite?.name == siteName,
+                  token == self.currentToken else { return }
             let value = (result as? String) ?? "unknown"
             switch value {
             case "ok":
-                self.completeCurrent(status: "签到成功")
+                self.completeCurrent(status: "签到成功", token: token)
             case "login":
-                self.completeCurrent(status: "需要登录")
+                self.completeCurrent(status: "需要登录", token: token)
             default:
-                self.completeCurrent(status: "已点击签到")
+                self.completeCurrent(status: "已点击签到", token: token)
             }
         }
     }
@@ -199,6 +220,6 @@ final class SignInRunner: NSObject, WKNavigationDelegate {
     private func handleFailure(_ error: Error) {
         let nsError = error as NSError
         if nsError.code == NSURLErrorCancelled { return }
-        completeCurrent(status: "打不开（网络/验证）")
+        completeCurrent(status: "打不开（网络/验证）", token: currentToken)
     }
 }

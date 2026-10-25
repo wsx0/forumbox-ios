@@ -26,6 +26,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var ignoreScrollUntil = Date.distantPast
     private var isLoading = false
     private var hasFadedInContent = false
+    private var isTransferring115 = false
 
     private let errorOverlay = UIView()
     private let errorDetailLabel = UILabel()
@@ -283,7 +284,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         view.addSubview(errorOverlay)
         NSLayoutConstraint.activate([
             errorOverlay.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            errorOverlay.bottomAnchor.constraint(equalTo: toolbar.topAnchor),
+            errorOverlay.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             errorOverlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             errorOverlay.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
@@ -331,6 +332,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         errorDetailLabel.text = message + "\n请检查网络 / 代理，或稍后重试"
         errorOverlay.isHidden = false
         view.bringSubviewToFront(errorOverlay)
+        view.bringSubviewToFront(toolbar)
     }
 
     private func hideError() {
@@ -755,18 +757,37 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     }
 
     private func transferTo115(_ link: String) {
+        guard !isTransferring115 else { return }
+        isTransferring115 = true
         UIPasteboard.general.string = link
         Haptics.tap()
+
+        let busy = UIAlertController(title: "正在添加到 115…", message: nil, preferredStyle: .alert)
+        var busyShown = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self = self, self.isTransferring115 else { return }
+            busyShown = true
+            self.present(busy, animated: true)
+        }
+
         Cloud115.shared.addED2K(link) { [weak self] result in
             guard let self = self else { return }
-            switch result {
-            case .success:
-                Haptics.success()
-                self.presentNotice("已添加到 115 云下载\n可在 115 App 里查看进度")
-            case .failure(.notLoggedIn):
-                self.prompt115Login(link: link)
-            case .failure(.failed(let message)):
-                self.show115Failure(message, link: link)
+            self.isTransferring115 = false
+            let finish = {
+                switch result {
+                case .success:
+                    Haptics.success()
+                    self.presentNotice("已添加到 115 云下载\n可在 115 App 里查看进度")
+                case .failure(.notLoggedIn):
+                    self.prompt115Login(link: link)
+                case .failure(.failed(let message)):
+                    self.show115Failure(message, link: link)
+                }
+            }
+            if busyShown {
+                busy.dismiss(animated: true, completion: finish)
+            } else {
+                finish()
             }
         }
     }

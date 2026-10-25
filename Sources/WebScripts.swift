@@ -19,7 +19,7 @@ enum WebScripts {
             if (window.__fbEd2kInstalled) return;
             window.__fbEd2kInstalled = true;
             function refresh() {
-                var links = document.querySelectorAll('a[href^="ed2k://"]');
+                var links = document.querySelectorAll('a[href^="ed2k://"], a[href^="ED2K://"], a[href^="Ed2k://"]');
                 var btn = document.getElementById('fb-ed2k-btn');
                 if (!links.length) {
                     if (btn) btn.remove();
@@ -31,7 +31,7 @@ enum WebScripts {
                     btn.style.cssText = 'position:fixed;right:14px;bottom:84px;z-index:2147483647;background:#ff6fa5;color:#fff;font:600 13px -apple-system,BlinkMacSystemFont,sans-serif;padding:9px 14px;border-radius:19px;box-shadow:0 6px 18px rgba(0,0,0,.28);';
                     btn.addEventListener('click', function () {
                         var out = [];
-                        var els = document.querySelectorAll('a[href^="ed2k://"]');
+                        var els = document.querySelectorAll('a[href^="ed2k://"], a[href^="ED2K://"], a[href^="Ed2k://"]');
                         for (var i = 0; i < els.length && i < 20; i++) {
                             out.push(els[i].href);
                         }
