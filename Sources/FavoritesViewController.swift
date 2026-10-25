@@ -44,6 +44,7 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
         navigationItem.rightBarButtonItems = nil
         navigationController?.navigationBar.prefersLargeTitles = false
         setupHeader()
+        addFolderButton.accessibilityLabel = "新建收藏夹"
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
 
         favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,

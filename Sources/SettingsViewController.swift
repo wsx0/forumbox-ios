@@ -78,7 +78,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerTitleLabel)
 
-        headerSubtitleLabel.text = "主题、字体、背景与站点"
+        headerSubtitleLabel.text = "外观、视频与站点"
         headerSubtitleLabel.font = Theme.font(12, .regular)
         headerSubtitleLabel.textColor = Theme.textDim
         headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
