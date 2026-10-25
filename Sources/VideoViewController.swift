@@ -10,6 +10,7 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
     private let openButton = UIButton(type: .system)
     private let emptyLabel = UILabel()
 
+    private let sites = VideoSites.all
     private var entries: [VideoEntry] = []
 
     override func viewDidLoad() {
@@ -51,6 +52,11 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
+
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .portrait
+    }
+
 
     // MARK: - 头部
 
@@ -149,7 +155,7 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
         }
         let footer = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 110))
         footer.backgroundColor = .clear
-        emptyLabel.text = "还没有观看记录\n粘贴视频链接开始观看"
+        emptyLabel.text = "还没有观看记录\n点上面的站点或粘贴链接开始观看"
         emptyLabel.numberOfLines = 0
         emptyLabel.textAlignment = .center
         emptyLabel.font = Theme.font(13, .regular)
@@ -188,15 +194,16 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
         return true
     }
 
-    private func openVideo(url: URL) {
+    private func openVideo(url: URL, title: String? = nil) {
         Haptics.tap()
         let host = url.host ?? "视频"
-        VideoHistoryStore.shared.add(title: host, url: url.absoluteString)
+        let name = title ?? host
+        VideoHistoryStore.shared.add(title: name, url: url.absoluteString)
         reload()
 
-        let controller = WebViewController(title: host, urlString: url.absoluteString, videoMode: true)
-        controller.onTitleChange = { [weak self] title in
-            VideoHistoryStore.shared.updateTitle(url: url.absoluteString, title: title)
+        let controller = WebViewController(title: name, urlString: url.absoluteString, videoMode: true)
+        controller.onTitleChange = { [weak self] pageTitle in
+            VideoHistoryStore.shared.updateTitle(url: url.absoluteString, title: pageTitle)
             self?.reload()
         }
         navigationController?.pushViewController(controller, animated: true)
@@ -205,15 +212,15 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
     // MARK: - 表格
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
+        return 2
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return entries.count
+        return section == 0 ? sites.count : entries.count
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return "最近观看"
+        return section == 0 ? "站点" : "最近观看"
     }
 
     override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
@@ -223,10 +230,17 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
     }
 
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 72 * AppSettings.shared.fontScale
+        return (indexPath.section == 0 ? 68 : 72) * AppSettings.shared.fontScale
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        if indexPath.section == 0 {
+            let site = sites[indexPath.row]
+            let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
+                                                     for: indexPath) as! SiteRowCell
+            cell.configure(emoji: site.emoji, title: site.name, subtitle: site.note)
+            return cell
+        }
         let cell = tableView.dequeueReusableCell(withIdentifier: VideoRowCell.reuseID,
                                                  for: indexPath) as! VideoRowCell
         cell.configure(entry: entries[indexPath.row])
@@ -235,14 +249,20 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        if indexPath.section == 0 {
+            guard indexPath.row < sites.count,
+                  let url = URL(string: sites[indexPath.row].url) else { return }
+            openVideo(url: url, title: sites[indexPath.row].name)
+            return
+        }
         guard indexPath.row < entries.count,
               let url = URL(string: entries[indexPath.row].url) else { return }
-        openVideo(url: url)
+        openVideo(url: url, title: entries[indexPath.row].title)
     }
 
     override func tableView(_ tableView: UITableView,
                             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        guard indexPath.row < entries.count else { return nil }
+        guard indexPath.section == 1, indexPath.row < entries.count else { return nil }
         let entry = entries[indexPath.row]
         let delete = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, completion in
             VideoHistoryStore.shared.remove(id: entry.id)

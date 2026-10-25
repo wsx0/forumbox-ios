@@ -122,6 +122,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return videoMode ? .allButUpsideDown : .portrait
+    }
+
     // MARK: - 构建
 
     private func buildWebView() {
@@ -144,6 +148,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         if !videoMode {
             ucc.add(WeakScriptHandler(delegate: self), name: "ed2k")
             ucc.addUserScript(WKUserScript(source: WebScripts.ed2kScanner,
+                                           injectionTime: .atDocumentEnd,
+                                           forMainFrameOnly: true))
+        } else {
+            // 让网页视频内联播放，并保留原生全屏按钮
+            ucc.addUserScript(WKUserScript(source: WebScripts.videoEnhancer,
                                            injectionTime: .atDocumentEnd,
                                            forMainFrameOnly: true))
         }

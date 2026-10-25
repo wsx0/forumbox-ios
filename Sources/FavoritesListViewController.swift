@@ -87,6 +87,11 @@ final class FavoritesListViewController: UITableViewController {
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .portrait
+    }
+
+
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return items.count
     }

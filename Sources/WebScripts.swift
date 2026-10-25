@@ -46,4 +46,25 @@ enum WebScripts {
         } catch (e) {}
     })();
     """
+
+    /// 视频模式：让页面里的 video 支持内联播放（不强制全屏）
+    static let videoEnhancer = """
+    (function () {
+        try {
+            function fix(v) {
+                try {
+                    v.setAttribute('playsinline', '');
+                    v.setAttribute('webkit-playsinline', '');
+                    if (!v.controls) v.controls = true;
+                } catch (e) {}
+            }
+            function scan() {
+                var list = document.querySelectorAll('video');
+                for (var i = 0; i < list.length; i++) fix(list[i]);
+            }
+            scan();
+            setInterval(scan, 2500);
+        } catch (e) {}
+    })();
+    """
 }

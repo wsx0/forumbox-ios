@@ -84,6 +84,11 @@ final class FavoritesViewController: UITableViewController {
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .portrait
+    }
+
+
     // MARK: - 头部
 
     private func makeHeaderIconButton(systemName: String, action: Selector) -> UIButton {

@@ -78,6 +78,11 @@ final class SitesViewController: UITableViewController {
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .portrait
+    }
+
+
     // MARK: - 头部
 
     private func makePrimaryButton(title: String, icon: String) -> UIButton {

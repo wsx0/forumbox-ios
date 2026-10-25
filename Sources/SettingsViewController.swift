@@ -59,8 +59,11 @@ final class SettingsViewController: UITableViewController {
         }
     }
 
-    private func setupHeader() {
-        let width = max(tableView.bounds.width, view.bounds.width)
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .portrait
+    }
+
+    private func setupHeader() {        let width = max(tableView.bounds.width, view.bounds.width)
         let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 58))
         header.backgroundColor = .clear
 
