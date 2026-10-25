@@ -1,7 +1,7 @@
 import UIKit
 import WebKit
 
-final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
+final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
 
     private let site: Site
     private var webView: WKWebView!
@@ -102,6 +102,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     deinit {
         observations.forEach { $0.invalidate() }
+        contentController?.removeScriptMessageHandler(forName: "ed2k")
         if let observer = favoritesObserver {
             NotificationCenter.default.removeObserver(observer)
         }
@@ -127,6 +128,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         ucc.addUserScript(WKUserScript(source: WebScripts.popupSuppressor,
                                        injectionTime: .atDocumentStart,
                                        forMainFrameOnly: false))
+        // ED2K 链接识别 + 悬浮「转存 115」按钮
+        ucc.add(WeakScriptHandler(delegate: self), name: "ed2k")
+        ucc.addUserScript(WKUserScript(source: WebScripts.ed2kScanner,
+                                       injectionTime: .atDocumentEnd,
+                                       forMainFrameOnly: true))
         contentController = ucc
 
         let webView = WKWebView(frame: .zero, configuration: config)
@@ -634,6 +640,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             return
         }
         let scheme = (url.scheme ?? "").lowercased()
+        if scheme == "ed2k" {
+            decisionHandler(.cancel)
+            presentED2KActions(link: url.absoluteString)
+            return
+        }
         let inAppSchemes: Set<String> = ["http", "https", "file", "about", "data", "blob", "javascript"]
         if scheme.isEmpty || inAppSchemes.contains(scheme) {
             decisionHandler(.allow)
@@ -687,9 +698,103 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                 let activity = UIActivityViewController(activityItems: [link], applicationActivities: nil)
                 self.present(activity, animated: true)
             }
-            return UIMenu(children: [openAction, copyAction, safariAction, shareAction])
+            var children: [UIMenuElement] = [openAction, copyAction, safariAction, shareAction]
+            if link.scheme?.lowercased() == "ed2k" {
+                let transfer = UIAction(title: "转存到 115 网盘",
+                                        image: UIImage(systemName: "icloud.and.arrow.up")) { [weak self] _ in
+                    self?.transferTo115(link.absoluteString)
+                }
+                children.insert(transfer, at: 0)
+            }
+            return UIMenu(children: children)
         }
         completionHandler(configuration)
+    }
+
+    // MARK: - ED2K → 115 网盘
+
+    func userContentController(_ userContentController: WKUserContentController,
+                               didReceive message: WKScriptMessage) {
+        guard message.name == "ed2k",
+              let body = message.body as? [String: Any],
+              let links = body["links"] as? [String],
+              !links.isEmpty else { return }
+        presentED2KList(links)
+    }
+
+    private func presentED2KList(_ links: [String]) {
+        let sheet = UIAlertController(title: "发现 \(links.count) 个 ED2K 链接",
+                                      message: "选择要转存到 115 云下载的链接",
+                                      preferredStyle: .actionSheet)
+        for link in links.prefix(20) {
+            let short = link.count > 46 ? String(link.prefix(46)) + "…" : link
+            sheet.addAction(UIAlertAction(title: short, style: .default) { [weak self] _ in
+                self?.transferTo115(link)
+            })
+        }
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        if let pop = sheet.popoverPresentationController {
+            pop.barButtonItem = moreButton
+        }
+        present(sheet, animated: true)
+    }
+
+    private func presentED2KActions(link: String) {
+        let sheet = UIAlertController(title: "ED2K 链接", message: nil, preferredStyle: .actionSheet)
+        sheet.addAction(UIAlertAction(title: "转存到 115 网盘", style: .default) { [weak self] _ in
+            self?.transferTo115(link)
+        })
+        sheet.addAction(UIAlertAction(title: "复制链接", style: .default) { _ in
+            UIPasteboard.general.string = link
+        })
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        if let pop = sheet.popoverPresentationController {
+            pop.barButtonItem = moreButton
+        }
+        present(sheet, animated: true)
+    }
+
+    private func transferTo115(_ link: String) {
+        UIPasteboard.general.string = link
+        Haptics.tap()
+        Cloud115.shared.addED2K(link) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success:
+                Haptics.success()
+                self.presentNotice("已添加到 115 云下载\n可在 115 App 里查看进度")
+            case .failure(.notLoggedIn):
+                self.prompt115Login(link: link)
+            case .failure(.failed(let message)):
+                self.show115Failure(message, link: link)
+            }
+        }
+    }
+
+    private func prompt115Login(link: String) {
+        let alert = UIAlertController(title: "需要登录 115 网盘",
+                                      message: "登录后会自动把 ED2K 加入 115 云下载",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "去登录", style: .default) { [weak self] _ in
+            self?.navigationController?.pushViewController(
+                WebViewController(title: "115 网盘", urlString: "https://115.com/"),
+                animated: true)
+        })
+        alert.addAction(UIAlertAction(title: "仅复制链接", style: .default) { [weak self] _ in
+            UIPasteboard.general.string = link
+            self?.presentNotice("ED2K 链接已复制")
+        })
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        present(alert, animated: true)
+    }
+
+    private func show115Failure(_ message: String, link: String) {
+        let alert = UIAlertController(title: "添加失败", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "复制链接", style: .default) { _ in
+            UIPasteboard.general.string = link
+        })
+        alert.addAction(UIAlertAction(title: "好", style: .cancel))
+        present(alert, animated: true)
     }
 
     // MARK: - 收藏
@@ -767,4 +872,19 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     }
 
     // MARK: - 常量
+}
+
+/// 弱引用代理，避免 WKUserContentController 强引用 WebViewController 造成循环
+final class WeakScriptHandler: NSObject, WKScriptMessageHandler {
+
+    private weak var delegate: WKScriptMessageHandler?
+
+    init(delegate: WKScriptMessageHandler) {
+        self.delegate = delegate
+    }
+
+    func userContentController(_ userContentController: WKUserContentController,
+                               didReceive message: WKScriptMessage) {
+        delegate?.userContentController(userContentController, didReceive: message)
+    }
 }

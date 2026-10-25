@@ -4,16 +4,20 @@ struct Site: Codable, Equatable {
     let name: String
     let note: String
     let url: String
+    /// 该站的签到页地址（nil 表示不支持一键签到）
+    let signURL: String?
     /// 列表里的 emoji 小图标
     let emoji: String
 
     init(name: String,
          note: String,
          url: String,
+         signURL: String? = nil,
          emoji: String = "🌐") {
         self.name = name
         self.note = note
         self.url = url
+        self.signURL = signURL
         self.emoji = emoji
     }
 }
@@ -24,10 +28,12 @@ enum Sites {
         Site(name: "98堂",
              note: "Discuz! · 综合论坛",
              url: "https://sehuatang.net/forum.php?forumlist=1&mobile=2",
+             signURL: "https://sehuatang.net/plugin.php?id=k_misign:sign&mobile=2",
              emoji: "🌸"),
         Site(name: "司机社",
              note: "Discuz! · 热门导读",
              url: "https://xsijishe.net/forum.php?mod=guide&view=hot&mobile=2&forcemobile=1",
+             signURL: "https://xsijishe.net/plugin.php?id=k_misign:sign&mobile=2&forcemobile=1",
              emoji: "🚗"),
         Site(name: "JavBus 论坛",
              note: "论坛 · 搜索入口",
@@ -44,6 +50,7 @@ enum Sites {
         Site(name: "x999x",
              note: "Discuz! · 论坛",
              url: "https://www.x999x.me/forum.php",
+             signURL: "https://www.x999x.me/plugin.php?id=k_misign:sign&mobile=2",
              emoji: "🎴"),
         Site(name: "Pornolab",
              note: "国外论坛",
