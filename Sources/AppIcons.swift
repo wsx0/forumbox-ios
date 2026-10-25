@@ -8,7 +8,7 @@ struct AppIconOption {
 
 enum AppIcons {
     static let all: [AppIconOption] = [
-        AppIconOption(key: nil, name: "小代码酱", previewName: "IconDefault"),
+        AppIconOption(key: nil, name: "鲸鱼", previewName: "IconDefault"),
         AppIconOption(key: "IconSakura", name: "粉樱", previewName: "IconSakura"),
         AppIconOption(key: "IconCat", name: "猫耳", previewName: "IconCat"),
         AppIconOption(key: "IconMoon", name: "月白", previewName: "IconMoon"),
