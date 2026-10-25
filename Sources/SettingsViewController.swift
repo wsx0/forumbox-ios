@@ -11,6 +11,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         case background
         case removeBackground
         case resetAppearance
+        case videoPlayer
         case manageSites
         case version
     }
@@ -66,7 +67,8 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
 
-    private func setupHeader() {        let width = max(tableView.bounds.width, view.bounds.width)
+    private func setupHeader() {
+        let width = max(tableView.bounds.width, view.bounds.width)
         let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 58))
         header.backgroundColor = .clear
 
@@ -101,7 +103,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
             appearance.append(.removeBackground)
         }
         appearance.append(.resetAppearance)
-        rows = [appearance, [.manageSites], [.version]]
+        rows = [appearance, [.videoPlayer], [.manageSites], [.version]]
     }
 
     // MARK: - 表格
@@ -117,7 +119,8 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch section {
         case 0: return "外观"
-        case 1: return "论坛"
+        case 1: return "视频"
+        case 2: return "论坛"
         default: return "关于"
         }
     }
@@ -147,6 +150,10 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
             cell.configure(title: "移除背景图", value: nil, showsChevron: false, destructive: true)
         case .resetAppearance:
             cell.configure(title: "恢复默认外观", value: nil, showsChevron: false, destructive: true)
+        case .videoPlayer:
+            cell.configure(title: "视频播放器",
+                           value: AppSettings.shared.videoPlayerName,
+                           showsChevron: true)
         case .manageSites:
             cell.configure(title: "站点管理", value: "\(Sites.all.count) 个站点", showsChevron: true)
         case .version:
@@ -174,6 +181,8 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
             ThemePicker.rebuildRoot(from: self)
         case .resetAppearance:
             confirmResetAppearance()
+        case .videoPlayer:
+            presentVideoPlayerPicker()
         case .manageSites:
             let controller = SitesViewController(style: .insetGrouped)
             controller.managementMode = true
@@ -184,6 +193,28 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
     }
 
     // MARK: - 选择器
+
+    private func presentVideoPlayerPicker() {
+        let sheet = UIAlertController(title: "视频打开方式",
+                                      message: "系统播放器兼容性更好；内置播放器支持广告拦截。",
+                                      preferredStyle: .actionSheet)
+        let system = AppSettings.shared.videoUseSystemPlayer ? "系统播放器（推荐）  ✓" : "系统播放器（推荐）"
+        sheet.addAction(UIAlertAction(title: system, style: .default) { [weak self] _ in
+            AppSettings.shared.videoUseSystemPlayer = true
+            self?.tableView.reloadData()
+        })
+        let builtin = AppSettings.shared.videoUseSystemPlayer ? "内置播放器" : "内置播放器  ✓"
+        sheet.addAction(UIAlertAction(title: builtin, style: .default) { [weak self] _ in
+            AppSettings.shared.videoUseSystemPlayer = false
+            self?.tableView.reloadData()
+        })
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        if let pop = sheet.popoverPresentationController {
+            pop.sourceView = view
+            pop.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+        }
+        present(sheet, animated: true)
+    }
 
     private func presentFontPicker() {
         let sheet = UIAlertController(title: "选择字体", message: nil, preferredStyle: .actionSheet)

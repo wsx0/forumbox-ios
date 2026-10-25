@@ -58,6 +58,7 @@ final class AppSettings {
 
     private let fontChoiceKey = "fb_font_choice"
     private let fontScaleKey = "fb_font_scale"
+    private let videoSystemPlayerKey = "fb_video_system_player"
     private let backgroundFileName = "fb_background.jpg"
     private var cachedBackground: UIImage?
     private var didLoadBackground = false
@@ -93,8 +94,22 @@ final class AppSettings {
         return fontChoice.font(size: scaled, weight: weight, plainStyle: Theme.isPlainStyle)
     }
 
-    // MARK: - 背景图
+    /// 视频默认用系统 Safari 视图打开（兼容性更好，避免 WKWebView 播放崩溃）
+    var videoUseSystemPlayer: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: videoSystemPlayerKey) == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: videoSystemPlayerKey)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: videoSystemPlayerKey) }
+    }
 
+    var videoPlayerName: String {
+        return videoUseSystemPlayer ? "系统播放器" : "内置播放器"
+    }
+
+    // MARK: - 背景图
     private var backgroundURL: URL {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return dir.appendingPathComponent(backgroundFileName)

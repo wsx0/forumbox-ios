@@ -1,4 +1,5 @@
 import UIKit
+import SafariServices
 
 /// 视频 Tab：粘贴视频链接，在 App 内用 WKWebView 播放网页视频
 final class VideoViewController: UITableViewController, UITextFieldDelegate, ScrollToTopable {
@@ -249,13 +250,22 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate, Scr
 
     private func openVideo(url: URL, title: String? = nil) {
         guard navigationController?.topViewController === self else { return }
-        CrashLogger.log("open video \(url.absoluteString)")
-        Haptics.tap()
         let host = url.host ?? "视频"
         let name = title ?? host
         VideoHistoryStore.shared.add(title: name, url: url.absoluteString)
         reload()
+        Haptics.tap()
 
+        if AppSettings.shared.videoUseSystemPlayer {
+            CrashLogger.log("open video system \(url.absoluteString)")
+            let safari = SFSafariViewController(url: url)
+            safari.preferredControlTintColor = Theme.accent
+            safari.modalPresentationStyle = .fullScreen
+            present(safari, animated: true)
+            return
+        }
+
+        CrashLogger.log("open video builtin \(url.absoluteString)")
         let controller = WebViewController(title: name, urlString: url.absoluteString, videoMode: true)
         controller.onTitleChange = { [weak self] pageTitle in
             VideoHistoryStore.shared.updateTitle(url: url.absoluteString, title: pageTitle)
