@@ -1,6 +1,6 @@
 import UIKit
 
-/// 收藏 Tab：收藏夹列表 + 最近收藏
+/// 收藏 Tab：收藏夹列表 + 最近收藏（分组列表）
 final class FavoritesViewController: UITableViewController {
 
     private lazy var themeButton = ThemePicker.makeButton(target: self, action: #selector(showThemePicker))
@@ -9,8 +9,8 @@ final class FavoritesViewController: UITableViewController {
                                                        target: self,
                                                        action: #selector(addFolder))
 
+    private lazy var navTitle = NavTitleView(title: "收藏", subtitle: nil)
     private let emptyHint = UILabel()
-    private let titleLabel = UILabel()
     private var favoritesObserver: NSObjectProtocol?
 
     deinit {
@@ -23,16 +23,18 @@ final class FavoritesViewController: UITableViewController {
         super.viewDidLoad()
         view.backgroundColor = Theme.bgTop
         tableView.backgroundColor = .clear
-        tableView.separatorStyle = .none
-        tableView.rowHeight = 90
-        tableView.contentInset = UIEdgeInsets(top: 6, left: 0, bottom: 24, right: 0)
-        tableView.register(CardCell.self, forCellReuseIdentifier: "CardCell")
+        tableView.separatorStyle = .singleLine
+        tableView.separatorColor = Theme.cardBorder
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
+        tableView.rowHeight = 68
+        tableView.sectionHeaderTopPadding = 12
+        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
+        tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
+        tableView.register(FavoriteRowCell.self, forCellReuseIdentifier: FavoriteRowCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
-        titleLabel.text = "收藏"
-        titleLabel.font = Theme.rounded(20, .bold)
-        titleLabel.textColor = Theme.text
+
         navigationItem.title = ""
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: titleLabel)
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: navTitle)
         navigationItem.rightBarButtonItems = [addFolderButton, themeButton]
         navigationController?.navigationBar.prefersLargeTitles = false
 
@@ -41,8 +43,8 @@ final class FavoritesViewController: UITableViewController {
         emptyHint.text = "还没有收藏\n\n在任意帖子页面点右上角 ☆ 即可收藏"
         emptyHint.numberOfLines = 0
         emptyHint.textAlignment = .center
-        emptyHint.textColor = Theme.textFaint
-        emptyHint.font = Theme.rounded(14, .medium)
+        emptyHint.textColor = Theme.textDim
+        emptyHint.font = .systemFont(ofSize: 13, weight: .regular)
         emptyHint.frame = background.bounds
         emptyHint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         background.addSubview(emptyHint)
@@ -52,13 +54,16 @@ final class FavoritesViewController: UITableViewController {
                                                                    queue: .main) { [weak self] _ in
             self?.tableView.reloadData()
             self?.updateEmptyHint()
+            self?.updateNavTitle()
         }
+        updateNavTitle()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tableView.reloadData()
         updateEmptyHint()
+        updateNavTitle()
     }
 
     override func viewDidLayoutSubviews() {
@@ -71,6 +76,12 @@ final class FavoritesViewController: UITableViewController {
 
     private func updateEmptyHint() {
         emptyHint.isHidden = !FavoriteStore.shared.items.isEmpty
+    }
+
+    private func updateNavTitle() {
+        let folders = FavoriteStore.shared.folders.count + 1
+        let items = FavoriteStore.shared.items.count
+        navTitle.update(subtitle: "\(folders) 个收藏夹 · \(items) 条收藏")
     }
 
     // MARK: - 动作
@@ -102,6 +113,7 @@ final class FavoritesViewController: UITableViewController {
                 FavoriteStore.shared.addFolder(name: name)
             }
             self.tableView.reloadData()
+            self.updateNavTitle()
         })
         present(alert, animated: true)
     }
@@ -114,6 +126,7 @@ final class FavoritesViewController: UITableViewController {
         alert.addAction(UIAlertAction(title: "删除", style: .destructive) { [weak self] _ in
             FavoriteStore.shared.deleteFolder(id: folder.id)
             self?.tableView.reloadData()
+            self?.updateNavTitle()
         })
         present(alert, animated: true)
     }
@@ -179,48 +192,40 @@ final class FavoritesViewController: UITableViewController {
         return recentItems.count
     }
 
-    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        let header = UIView()
-        header.backgroundColor = .clear
-        let label = UILabel()
-        label.font = Theme.rounded(12, .semibold)
-        label.textColor = Theme.textFaint
-        label.translatesAutoresizingMaskIntoConstraints = false
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         if section == 0 {
-            label.text = "📁 收藏夹"
-        } else {
-            label.text = "🕘 最近收藏（\(recentItems.count)）"
+            return "收藏夹"
         }
-        header.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
-            label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -4),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16)
-        ])
-        return header
+        return "最近收藏（\(recentItems.count)）"
     }
 
-    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return 34
+    override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
+        guard let header = view as? UITableViewHeaderFooterView else { return }
+        header.textLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        header.textLabel?.textColor = Theme.textDim
+    }
+
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return indexPath.section == 0 ? 68 : 82
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
             let row = folderRows[indexPath.row]
-            return tableView.dequeueCard(for: indexPath, model: CardCell.Model(
-                emoji: row.id == nil ? "📥" : "📁",
-                title: row.name,
-                subtitle: "\(row.count) 条收藏",
-                detail: nil,
-                showsChevron: true))
+            let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
+                                                     for: indexPath) as! SiteRowCell
+            cell.configure(emoji: row.id == nil ? "📥" : "📁",
+                           title: row.name,
+                           subtitle: "\(row.count) 条收藏")
+            return cell
         }
         let item = recentItems[indexPath.row]
-        return tableView.dequeueCard(for: indexPath, model: CardCell.Model(
-            emoji: item.siteEmoji,
-            title: item.title,
-            subtitle: "\(item.siteName) · \(FavoriteStore.shared.folderName(for: item.folderId))",
-            detail: Self.dateText(item.createdAt),
-            showsChevron: true))
+        let cell = tableView.dequeueReusableCell(withIdentifier: FavoriteRowCell.reuseID,
+                                                 for: indexPath) as! FavoriteRowCell
+        cell.configure(emoji: item.siteEmoji,
+                       title: item.title,
+                       meta: "\(item.siteName) · \(FavoriteStore.shared.folderName(for: item.folderId)) · \(Self.dateText(item.createdAt))")
+        return cell
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -265,6 +270,7 @@ final class FavoritesViewController: UITableViewController {
             FavoriteStore.shared.remove(id: item.id)
             self?.tableView.reloadData()
             self?.updateEmptyHint()
+            self?.updateNavTitle()
             completion(true)
         }
         return UISwipeActionsConfiguration(actions: [delete, move])

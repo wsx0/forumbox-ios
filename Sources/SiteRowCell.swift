@@ -79,8 +79,13 @@ final class SiteRowCell: UITableViewCell {
     }
 
     func configure(site: Site) {
-        emojiLabel.text = site.emoji
-        titleLabel.text = site.name
-        subtitleLabel.text = site.note
+        configure(emoji: site.emoji, title: site.name, subtitle: site.note)
+    }
+
+    func configure(emoji: String, title: String, subtitle: String) {
+        emojiLabel.text = emoji
+        titleLabel.text = title
+        subtitleLabel.text = subtitle
+        subtitleLabel.isHidden = subtitle.isEmpty
     }
 }

@@ -11,8 +11,11 @@ final class SitesViewController: UITableViewController {
 
     private lazy var signButton = makePrimaryButton(title: "一键签到", icon: "checkmark.seal.fill")
     private lazy var cloudButton = makeTonalButton(title: "115 网盘", icon: "cloud")
-    private let headerHint = UILabel()
-    private let titleLabel = UILabel()
+    private lazy var navTitle = NavTitleView(title: "论坛", subtitle: nil)
+    private lazy var editButton = UIBarButtonItem(image: UIImage(systemName: "slider.horizontal.3"),
+                                                  style: .plain,
+                                                  target: self,
+                                                  action: #selector(toggleEditing))
     private var signRunner: SignInRunner?
 
     deinit {
@@ -32,12 +35,9 @@ final class SitesViewController: UITableViewController {
         tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
 
-        titleLabel.text = "论坛"
-        titleLabel.font = Theme.rounded(20, .bold)
-        titleLabel.textColor = Theme.text
         navigationItem.title = ""
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: titleLabel)
-        navigationItem.rightBarButtonItems = [addButton, editButtonItem, themeButton]
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: navTitle)
+        navigationItem.rightBarButtonItems = [addButton, editButton, themeButton]
         navigationController?.navigationBar.prefersLargeTitles = false
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
 
@@ -104,7 +104,7 @@ final class SitesViewController: UITableViewController {
 
     private func setupHeader() {
         let width = max(tableView.bounds.width, view.bounds.width)
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 92))
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 64))
         header.backgroundColor = .clear
 
         let stack = UIStackView(arrangedSubviews: [signButton, cloudButton])
@@ -114,20 +114,11 @@ final class SitesViewController: UITableViewController {
         stack.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(stack)
 
-        headerHint.font = .systemFont(ofSize: 13, weight: .regular)
-        headerHint.textColor = Theme.textDim
-        headerHint.translatesAutoresizingMaskIntoConstraints = false
-        header.addSubview(headerHint)
-
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 10),
+            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 8),
             stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            stack.heightAnchor.constraint(equalToConstant: 40),
-
-            headerHint.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 10),
-            headerHint.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
-            headerHint.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16)
+            stack.heightAnchor.constraint(equalToConstant: 40)
         ])
 
         tableView.tableHeaderView = header
@@ -136,7 +127,16 @@ final class SitesViewController: UITableViewController {
 
     private func updateHeaderHint() {
         let signCount = Sites.all.filter { $0.signURL != nil }.count
-        headerHint.text = "\(Sites.all.count) 个论坛 · 可签到 \(signCount) 个"
+        navTitle.update(subtitle: "\(Sites.all.count) 个论坛 · 可签到 \(signCount) 个")
+    }
+
+    @objc private func toggleEditing() {
+        setEditing(!isEditing, animated: true)
+    }
+
+    override func setEditing(_ editing: Bool, animated: Bool) {
+        super.setEditing(editing, animated: animated)
+        editButton.image = UIImage(systemName: editing ? "checkmark" : "slider.horizontal.3")
     }
 
     // MARK: - 动作

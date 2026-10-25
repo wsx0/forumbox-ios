@@ -28,7 +28,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
                                            image: TabIcon.image("text.bubble"),
                                            selectedImage: TabIcon.image("text.bubble"))
 
-        let favoriteNav = UINavigationController(rootViewController: FavoritesViewController(style: .plain))
+        let favoriteNav = UINavigationController(rootViewController: FavoritesViewController(style: .insetGrouped))
         favoriteNav.tabBarItem = UITabBarItem(title: "收藏",
                                               image: TabIcon.image("star"),
                                               selectedImage: TabIcon.image("star.fill"))

@@ -11,7 +11,7 @@ final class FavoritesListViewController: UITableViewController {
     init(folderId: UUID?, folderTitle: String) {
         self.folderId = folderId
         self.folderTitleText = folderTitle
-        super.init(style: .plain)
+        super.init(style: .insetGrouped)
     }
 
     required init?(coder: NSCoder) {
@@ -23,10 +23,13 @@ final class FavoritesListViewController: UITableViewController {
         title = folderTitleText
         view.backgroundColor = Theme.bgTop
         tableView.backgroundColor = .clear
-        tableView.separatorStyle = .none
+        tableView.separatorStyle = .singleLine
+        tableView.separatorColor = Theme.cardBorder
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
         tableView.rowHeight = 82
-        tableView.contentInset = UIEdgeInsets(top: 6, left: 0, bottom: 24, right: 0)
-        tableView.register(CardCell.self, forCellReuseIdentifier: "CardCell")
+        tableView.sectionHeaderTopPadding = 8
+        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
+        tableView.register(FavoriteRowCell.self, forCellReuseIdentifier: FavoriteRowCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
 
         let background = Theme.makeBackgroundView(tableView.bounds)
@@ -34,7 +37,7 @@ final class FavoritesListViewController: UITableViewController {
         emptyHint.text = "这个收藏夹还是空的"
         emptyHint.textAlignment = .center
         emptyHint.textColor = Theme.textFaint
-        emptyHint.font = Theme.rounded(14, .medium)
+        emptyHint.font = .systemFont(ofSize: 13, weight: .regular)
         emptyHint.frame = background.bounds
         emptyHint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         background.addSubview(emptyHint)
@@ -90,12 +93,12 @@ final class FavoritesListViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let item = items[indexPath.row]
-        return tableView.dequeueCard(for: indexPath, model: CardCell.Model(
-            emoji: item.siteEmoji,
-            title: item.title,
-            subtitle: item.siteName,
-            detail: Self.dateText(item.createdAt),
-            showsChevron: true))
+        let cell = tableView.dequeueReusableCell(withIdentifier: FavoriteRowCell.reuseID,
+                                                 for: indexPath) as! FavoriteRowCell
+        cell.configure(emoji: item.siteEmoji,
+                       title: item.title,
+                       meta: "\(item.siteName) · \(Self.dateText(item.createdAt))")
+        return cell
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
