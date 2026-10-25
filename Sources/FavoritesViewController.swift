@@ -6,9 +6,6 @@ final class FavoritesViewController: UITableViewController {
     private lazy var addFolderButton = makeHeaderIconButton(systemName: "plus",
                                                             action: #selector(addFolder))
 
-    private lazy var settingsButton = makeHeaderIconButton(systemName: "gearshape",
-                                                           action: #selector(openSettings))
-
     private let headerTitleLabel = UILabel()
     private let headerSubtitleLabel = UILabel()
     private let emptyHint = UILabel()
@@ -118,7 +115,7 @@ final class FavoritesViewController: UITableViewController {
         headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerSubtitleLabel)
 
-        let actions = UIStackView(arrangedSubviews: [addFolderButton, settingsButton])
+        let actions = UIStackView(arrangedSubviews: [addFolderButton])
         actions.axis = .horizontal
         actions.spacing = 2
         actions.translatesAutoresizingMaskIntoConstraints = false
@@ -152,11 +149,6 @@ final class FavoritesViewController: UITableViewController {
     }
 
     // MARK: - 动作
-
-    @objc private func openSettings() {
-        Haptics.tap()
-        navigationController?.pushViewController(SettingsViewController(style: .insetGrouped), animated: true)
-    }
 
     @objc private func addFolder() {
         presentFolderEditor(existing: nil)

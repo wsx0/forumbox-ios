@@ -10,9 +10,6 @@ final class SitesViewController: UITableViewController {
                                                  target: self,
                                                  action: #selector(addSite))
 
-    private lazy var settingsButton = makeHeaderIconButton(systemName: "gearshape",
-                                                           action: #selector(openSettings))
-
     private lazy var signButton = makePrimaryButton(title: "一键签到", icon: "checkmark.seal.fill")
     private lazy var cloudButton = makeTonalButton(title: "115 网盘", icon: "cloud")
     private let headerTitleLabel = UILabel()
@@ -121,19 +118,6 @@ final class SitesViewController: UITableViewController {
         return button
     }
 
-    private func makeHeaderIconButton(systemName: String, action: Selector) -> UIButton {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: systemName), for: .normal)
-        button.tintColor = Theme.textDim
-        button.addTarget(self, action: action, for: .touchUpInside)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            button.widthAnchor.constraint(equalToConstant: 44),
-            button.heightAnchor.constraint(equalToConstant: 44)
-        ])
-        return button
-    }
-
     private func setupHeader() {
         let width = max(tableView.bounds.width, view.bounds.width)
         let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 104))
@@ -150,8 +134,6 @@ final class SitesViewController: UITableViewController {
         headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerSubtitleLabel)
 
-        header.addSubview(settingsButton)
-
         let stack = UIStackView(arrangedSubviews: [signButton, cloudButton])
         stack.axis = .horizontal
         stack.spacing = 10
@@ -162,14 +144,11 @@ final class SitesViewController: UITableViewController {
         NSLayoutConstraint.activate([
             headerTitleLabel.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             headerTitleLabel.topAnchor.constraint(equalTo: header.topAnchor, constant: 6),
-            headerTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: settingsButton.leadingAnchor, constant: -8),
+            headerTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16),
 
             headerSubtitleLabel.leadingAnchor.constraint(equalTo: headerTitleLabel.leadingAnchor),
             headerSubtitleLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 0),
             headerSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16),
-
-            settingsButton.topAnchor.constraint(equalTo: header.topAnchor, constant: 0),
-            settingsButton.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -12),
 
             stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 56),
             stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
@@ -203,11 +182,6 @@ final class SitesViewController: UITableViewController {
 
     @objc private func addSite() {
         presentEditor(for: nil, at: nil)
-    }
-
-    @objc private func openSettings() {
-        Haptics.tap()
-        navigationController?.pushViewController(SettingsViewController(style: .insetGrouped), animated: true)
     }
 
     @objc private func startSignIn() {

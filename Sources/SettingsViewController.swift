@@ -15,10 +15,15 @@ final class SettingsViewController: UITableViewController {
     }
 
     private var rows: [[Row]] = []
+    private let headerTitleLabel = UILabel()
+    private let headerSubtitleLabel = UILabel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "设置"
+        navigationItem.title = "设置"
+        navigationItem.leftBarButtonItem = nil
+        navigationItem.rightBarButtonItems = nil
         view.backgroundColor = Theme.bgTop
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .singleLine
@@ -26,16 +31,62 @@ final class SettingsViewController: UITableViewController {
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
         tableView.rowHeight = 52 * AppSettings.shared.fontScale
         tableView.sectionHeaderTopPadding = 12
-        tableView.contentInset = UIEdgeInsets(top: 4, left: 0, bottom: 24, right: 0)
+        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
         tableView.register(SettingRowCell.self, forCellReuseIdentifier: SettingRowCell.reuseID)
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
+        setupHeader()
         rebuildRows()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
         rebuildRows()
         tableView.reloadData()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        tableView.backgroundView?.frame = tableView.bounds
+        if let header = tableView.tableHeaderView, header.frame.width != tableView.bounds.width {
+            header.frame.size.width = tableView.bounds.width
+            tableView.tableHeaderView = header
+        }
+    }
+
+    private func setupHeader() {
+        let width = max(tableView.bounds.width, view.bounds.width)
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 58))
+        header.backgroundColor = .clear
+
+        headerTitleLabel.text = "设置"
+        headerTitleLabel.font = Theme.rounded(20, .bold)
+        headerTitleLabel.textColor = Theme.text
+        headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(headerTitleLabel)
+
+        headerSubtitleLabel.text = "主题、字体、背景与站点"
+        headerSubtitleLabel.font = Theme.font(12, .regular)
+        headerSubtitleLabel.textColor = Theme.textDim
+        headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(headerSubtitleLabel)
+
+        NSLayoutConstraint.activate([
+            headerTitleLabel.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            headerTitleLabel.topAnchor.constraint(equalTo: header.topAnchor, constant: 6),
+            headerTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16),
+
+            headerSubtitleLabel.leadingAnchor.constraint(equalTo: headerTitleLabel.leadingAnchor),
+            headerSubtitleLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 0),
+            headerSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16)
+        ])
+
+        tableView.tableHeaderView = header
     }
 
     private func rebuildRows() {
