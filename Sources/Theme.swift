@@ -265,19 +265,36 @@ enum Theme {
     }
 
     static func rounded(_ size: CGFloat, _ weight: UIFont.Weight = .bold) -> UIFont {
-        let base = UIFont.systemFont(ofSize: size, weight: weight)
-        if isPlainStyle { return base }
-        if let descriptor = base.fontDescriptor.withDesign(.rounded) {
-            return UIFont(descriptor: descriptor, size: size)
-        }
-        return base
+        return AppSettings.shared.font(size: size, weight: weight)
     }
 
-    /// 背景视图：夜樱 = 樱花图 + 飘落粒子；其他主题 = 纯色/渐变
+    /// 正文/说明字体（同样跟随设置里的字体与字号）
+    static func font(_ size: CGFloat, _ weight: UIFont.Weight = .regular) -> UIFont {
+        return AppSettings.shared.font(size: size, weight: weight)
+    }
+
+    /// 背景视图：自定义背景图 / 夜樱樱花图 / 纯色渐变
     static func makeBackgroundView(_ frame: CGRect) -> UIView {
         let palette = ThemeManager.shared.palette
         let container = UIView(frame: frame)
         container.backgroundColor = palette.bgTop
+
+        if let custom = AppSettings.shared.backgroundImage {
+            let imageView = UIImageView(image: custom)
+            imageView.contentMode = .scaleAspectFill
+            imageView.clipsToBounds = true
+            imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            imageView.frame = container.bounds
+            container.addSubview(imageView)
+
+            let overlay = UIView(frame: container.bounds)
+            overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            overlay.backgroundColor = palette.isLight
+                ? UIColor.white.withAlphaComponent(0.55)
+                : UIColor.black.withAlphaComponent(0.55)
+            container.addSubview(overlay)
+            return container
+        }
 
         if let imageName = palette.backgroundImageName, let image = UIImage(named: imageName) {
             let imageView = UIImageView(image: image)

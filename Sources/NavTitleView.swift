@@ -14,7 +14,7 @@ final class NavTitleView: UIView {
         titleLabel.textColor = Theme.text
         titleLabel.lineBreakMode = .byTruncatingTail
 
-        subtitleLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        subtitleLabel.font = Theme.font(12, .regular)
         subtitleLabel.textColor = Theme.textDim
         subtitleLabel.lineBreakMode = .byTruncatingTail
 

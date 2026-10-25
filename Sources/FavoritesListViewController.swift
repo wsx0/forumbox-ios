@@ -26,7 +26,7 @@ final class FavoritesListViewController: UITableViewController {
         tableView.separatorStyle = .singleLine
         tableView.separatorColor = Theme.cardBorder
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
-        tableView.rowHeight = 82
+        tableView.rowHeight = 82 * AppSettings.shared.fontScale
         tableView.sectionHeaderTopPadding = 8
         tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
         tableView.register(FavoriteRowCell.self, forCellReuseIdentifier: FavoriteRowCell.reuseID)
@@ -37,7 +37,7 @@ final class FavoritesListViewController: UITableViewController {
         emptyHint.text = "这个收藏夹还是空的"
         emptyHint.textAlignment = .center
         emptyHint.textColor = Theme.textFaint
-        emptyHint.font = .systemFont(ofSize: 13, weight: .regular)
+        emptyHint.font = Theme.font(13, .regular)
         emptyHint.frame = background.bounds
         emptyHint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         background.addSubview(emptyHint)

@@ -3,11 +3,14 @@ import UIKit
 /// 收藏 Tab：收藏夹列表 + 最近收藏（分组列表）
 final class FavoritesViewController: UITableViewController {
 
-    private lazy var themeButton = ThemePicker.makeButton(target: self, action: #selector(showThemePicker))
-
     private lazy var addFolderButton = UIBarButtonItem(barButtonSystemItem: .add,
                                                        target: self,
                                                        action: #selector(addFolder))
+
+    private lazy var settingsButton = UIBarButtonItem(image: UIImage(systemName: "gearshape"),
+                                                      style: .plain,
+                                                      target: self,
+                                                      action: #selector(openSettings))
 
     private lazy var navTitle = NavTitleView(title: "收藏", subtitle: nil)
     private let emptyHint = UILabel()
@@ -35,7 +38,7 @@ final class FavoritesViewController: UITableViewController {
 
         navigationItem.title = ""
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: navTitle)
-        navigationItem.rightBarButtonItems = [addFolderButton, themeButton]
+        navigationItem.rightBarButtonItems = [addFolderButton, settingsButton]
         navigationController?.navigationBar.prefersLargeTitles = false
 
         let background = Theme.makeBackgroundView(tableView.bounds)
@@ -44,7 +47,7 @@ final class FavoritesViewController: UITableViewController {
         emptyHint.numberOfLines = 0
         emptyHint.textAlignment = .center
         emptyHint.textColor = Theme.textDim
-        emptyHint.font = .systemFont(ofSize: 13, weight: .regular)
+        emptyHint.font = Theme.font(13, .regular)
         emptyHint.frame = background.bounds
         emptyHint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         background.addSubview(emptyHint)
@@ -86,8 +89,9 @@ final class FavoritesViewController: UITableViewController {
 
     // MARK: - 动作
 
-    @objc private func showThemePicker() {
-        ThemePicker.present(from: self, sourceItem: themeButton)
+    @objc private func openSettings() {
+        Haptics.tap()
+        navigationController?.pushViewController(SettingsViewController(style: .insetGrouped), animated: true)
     }
 
     @objc private func addFolder() {
@@ -201,12 +205,13 @@ final class FavoritesViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
         guard let header = view as? UITableViewHeaderFooterView else { return }
-        header.textLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        header.textLabel?.font = Theme.font(13, .semibold)
         header.textLabel?.textColor = Theme.textDim
     }
 
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return indexPath.section == 0 ? 68 : 82
+        let scale = AppSettings.shared.fontScale
+        return (indexPath.section == 0 ? 68 : 82) * scale
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {

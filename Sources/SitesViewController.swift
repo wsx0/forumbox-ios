@@ -3,11 +3,17 @@ import UIKit
 /// 论坛页：站点列表 + 一键签到 / 115 入口 + 站点管理
 final class SitesViewController: UITableViewController {
 
-    private lazy var themeButton = ThemePicker.makeButton(target: self, action: #selector(showThemePicker))
+    /// 从设置页进入的站点管理模式（隐藏签到/115 快捷按钮）
+    var managementMode = false
 
     private lazy var addButton = UIBarButtonItem(barButtonSystemItem: .add,
                                                  target: self,
                                                  action: #selector(addSite))
+
+    private lazy var settingsButton = UIBarButtonItem(image: UIImage(systemName: "gearshape"),
+                                                      style: .plain,
+                                                      target: self,
+                                                      action: #selector(openSettings))
 
     private lazy var signButton = makePrimaryButton(title: "一键签到", icon: "checkmark.seal.fill")
     private lazy var cloudButton = makeTonalButton(title: "115 网盘", icon: "cloud")
@@ -29,21 +35,28 @@ final class SitesViewController: UITableViewController {
         tableView.separatorStyle = .singleLine
         tableView.separatorColor = Theme.cardBorder
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
-        tableView.rowHeight = 68
+        tableView.rowHeight = 68 * AppSettings.shared.fontScale
         tableView.sectionHeaderTopPadding = 0
         tableView.contentInset = UIEdgeInsets(top: 4, left: 0, bottom: 24, right: 0)
         tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
 
-        navigationItem.title = ""
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: navTitle)
-        navigationItem.rightBarButtonItems = [addButton, editButton, themeButton]
+        if managementMode {
+            navigationItem.title = "站点管理"
+            navigationItem.rightBarButtonItems = [addButton, editButton]
+        } else {
+            navigationItem.title = ""
+            navigationItem.leftBarButtonItem = UIBarButtonItem(customView: navTitle)
+            navigationItem.rightBarButtonItems = [settingsButton]
+        }
         navigationController?.navigationBar.prefersLargeTitles = false
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
 
-        signButton.addTarget(self, action: #selector(startSignIn), for: .touchUpInside)
-        cloudButton.addTarget(self, action: #selector(openCloud115), for: .touchUpInside)
-        setupHeader()
+        if !managementMode {
+            signButton.addTarget(self, action: #selector(startSignIn), for: .touchUpInside)
+            cloudButton.addTarget(self, action: #selector(openCloud115), for: .touchUpInside)
+            setupHeader()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -127,7 +140,11 @@ final class SitesViewController: UITableViewController {
 
     private func updateHeaderHint() {
         let signCount = Sites.all.filter { $0.signURL != nil }.count
-        navTitle.update(subtitle: "\(Sites.all.count) 个论坛 · 可签到 \(signCount) 个")
+        if managementMode {
+            navigationItem.title = "站点管理"
+        } else {
+            navTitle.update(subtitle: "\(Sites.all.count) 个论坛 · 可签到 \(signCount) 个")
+        }
     }
 
     @objc private func toggleEditing() {
@@ -145,8 +162,9 @@ final class SitesViewController: UITableViewController {
         presentEditor(for: nil, at: nil)
     }
 
-    @objc private func showThemePicker() {
-        ThemePicker.present(from: self, sourceItem: themeButton)
+    @objc private func openSettings() {
+        Haptics.tap()
+        navigationController?.pushViewController(SettingsViewController(style: .insetGrouped), animated: true)
     }
 
     @objc private func startSignIn() {

@@ -35,7 +35,7 @@ final class SiteRowCell: UITableViewCell {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.lineBreakMode = .byTruncatingTail
 
-        subtitleLabel.font = .systemFont(ofSize: 13, weight: .regular)
+        subtitleLabel.font = Theme.font(13, .regular)
         subtitleLabel.textColor = Theme.textDim
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         subtitleLabel.lineBreakMode = .byTruncatingTail

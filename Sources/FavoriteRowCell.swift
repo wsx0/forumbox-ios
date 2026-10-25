@@ -35,7 +35,7 @@ final class FavoriteRowCell: UITableViewCell {
         titleLabel.numberOfLines = 2
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        metaLabel.font = .systemFont(ofSize: 13, weight: .regular)
+        metaLabel.font = Theme.font(13, .regular)
         metaLabel.textColor = Theme.textDim
         metaLabel.translatesAutoresizingMaskIntoConstraints = false
         metaLabel.lineBreakMode = .byTruncatingTail
