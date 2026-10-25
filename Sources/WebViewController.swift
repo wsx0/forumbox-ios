@@ -28,6 +28,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     private var isLoading = false
     private var hasFadedInContent = false
     private var isTransferring115 = false
+    private var ed2kHandlerRegistered = false
 
     private let errorOverlay = UIView()
     private let errorDetailLabel = UILabel()
@@ -102,7 +103,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     deinit {
         observations.forEach { $0.invalidate() }
-        contentController?.removeScriptMessageHandler(forName: "ed2k")
+        // 只移除确实注册过的 handler（未注册时移除在 WebKit 里有已知的竞态崩溃）
+        if ed2kHandlerRegistered {
+            contentController?.removeScriptMessageHandler(forName: "ed2k")
+        }
         if let observer = favoritesObserver {
             NotificationCenter.default.removeObserver(observer)
         }
@@ -135,9 +139,6 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         config.mediaTypesRequiringUserActionForPlayback = []
         config.allowsPictureInPictureMediaPlayback = true
         config.allowsAirPlayForMediaPlayback = true
-        if #available(iOS 15.4, *) {
-            config.preferences.isElementFullscreenEnabled = true
-        }
 
         let ucc = config.userContentController
         // 屏蔽 JS 弹窗（window.open）
@@ -147,6 +148,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         // ED2K 链接识别 + 悬浮「转存 115」按钮（视频模式不需要）
         if !videoMode {
             ucc.add(WeakScriptHandler(delegate: self), name: "ed2k")
+            ed2kHandlerRegistered = true
             ucc.addUserScript(WKUserScript(source: WebScripts.ed2kScanner,
                                            injectionTime: .atDocumentEnd,
                                            forMainFrameOnly: true))
