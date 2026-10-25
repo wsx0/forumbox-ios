@@ -99,7 +99,7 @@ final class VideoSitesViewController: UITableViewController, ScrollToTopable {
             var urlText = fields.count > 1 ? (fields[1].text ?? "") : ""
             urlText = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !urlText.isEmpty else {
-                self.presentNotice("网址不能为空")
+                self.presentNoticeAfterDismiss("网址不能为空")
                 return
             }
             if !urlText.lowercased().hasPrefix("http://") && !urlText.lowercased().hasPrefix("https://") {
@@ -108,7 +108,7 @@ final class VideoSitesViewController: UITableViewController, ScrollToTopable {
             guard let url = URL(string: urlText),
                   let scheme = url.scheme?.lowercased(),
                   scheme == "http" || scheme == "https" else {
-                self.presentNotice("网址格式不正确")
+                self.presentNoticeAfterDismiss("网址格式不正确")
                 return
             }
             var note = fields.count > 2 ? (fields[2].text ?? "") : ""
@@ -140,6 +140,12 @@ final class VideoSitesViewController: UITableViewController, ScrollToTopable {
             self?.reload()
         })
         present(alert, animated: true)
+    }
+
+    private func presentNoticeAfterDismiss(_ text: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            self?.presentNotice(text)
+        }
     }
 
     private func presentNotice(_ text: String) {
