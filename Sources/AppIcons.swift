@@ -9,16 +9,16 @@ struct AppIconOption {
 enum AppIcons {
     static let all: [AppIconOption] = [
         AppIconOption(key: nil, name: "默认", previewName: "IconDefault"),
-        AppIconOption(key: "IconSakura", name: "樱花", previewName: "IconSakura"),
+        AppIconOption(key: "IconSakura", name: "粉樱", previewName: "IconSakura"),
         AppIconOption(key: "IconCat", name: "猫耳", previewName: "IconCat"),
-        AppIconOption(key: "IconMoon", name: "月眠", previewName: "IconMoon"),
-        AppIconOption(key: "IconStar", name: "星星", previewName: "IconStar"),
-        AppIconOption(key: "IconCyber", name: "赛博", previewName: "IconCyber"),
-        AppIconOption(key: "IconBunny", name: "兔兔", previewName: "IconBunny"),
+        AppIconOption(key: "IconMoon", name: "月白", previewName: "IconMoon"),
+        AppIconOption(key: "IconStar", name: "星野", previewName: "IconStar"),
+        AppIconOption(key: "IconCyber", name: "霓虹", previewName: "IconCyber"),
+        AppIconOption(key: "IconBunny", name: "兔眠", previewName: "IconBunny"),
         AppIconOption(key: "IconMatcha", name: "抹茶", previewName: "IconMatcha"),
-        AppIconOption(key: "IconPeach", name: "蜜桃", previewName: "IconPeach"),
-        AppIconOption(key: "IconOcean", name: "海浪", previewName: "IconOcean"),
-        AppIconOption(key: "IconPixel", name: "像素心", previewName: "IconPixel")
+        AppIconOption(key: "IconPeach", name: "桃桃", previewName: "IconPeach"),
+        AppIconOption(key: "IconOcean", name: "海音", previewName: "IconOcean"),
+        AppIconOption(key: "IconPixel", name: "像素", previewName: "IconPixel")
     ]
 
     static var currentKey: String? {
