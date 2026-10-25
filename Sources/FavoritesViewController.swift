@@ -105,16 +105,6 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
         tableView.setContentOffset(CGPoint(x: 0, y: top), animated: true)
     }
 
-    /// 从视频页星标进入时，默认展示视频收藏
-    func showVideos() {
-        segment = .videos
-        UserDefaults.standard.set(Segment.videos.rawValue, forKey: Self.segmentKey)
-        guard isViewLoaded else { return }
-        segmented.selectedSegmentIndex = Segment.videos.rawValue
-        updateChrome()
-        tableView.reloadData()
-    }
-
     // MARK: - 头部
 
     private func makeHeaderIconButton(systemName: String, action: Selector) -> UIButton {

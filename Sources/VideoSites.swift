@@ -97,14 +97,6 @@ final class VideoSiteStore {
         persist()
     }
 
-    func move(from: Int, to: Int) {
-        guard from != to, sites.indices.contains(from) else { return }
-        let item = sites.remove(at: from)
-        let target = min(max(to, 0), sites.count)
-        sites.insert(item, at: target)
-        persist()
-    }
-
     func resetDefaults() {
         sites = VideoSites.defaults
         persist()

@@ -67,11 +67,6 @@ final class VideoFavoriteStore {
         return items.filter { $0.folderId == folderId }.count
     }
 
-    func folderName(for folderId: UUID?) -> String {
-        guard let folderId = folderId else { return "默认收藏夹" }
-        return folders.first { $0.id == folderId }?.name ?? "默认收藏夹"
-    }
-
     func isFavorited(url: String) -> Bool {
         return items.contains { $0.url == url }
     }

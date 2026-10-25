@@ -80,7 +80,8 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerTitleLabel)
 
-        headerSubtitleLabel.text = "外观、视频与站点"
+        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "赛博盒子"
+        headerSubtitleLabel.text = "\(appName) · 图标、外观、视频与站点"
         headerSubtitleLabel.lineBreakMode = .byTruncatingTail
         headerSubtitleLabel.font = Theme.font(12, .regular)
         headerSubtitleLabel.textColor = Theme.textDim
