@@ -100,6 +100,9 @@ final class VideoViewController: UIViewController,
         openButton.backgroundColor = Theme.accent
         openButton.layer.cornerRadius = 17
         openButton.addTarget(self, action: #selector(openTypedURL), for: .touchUpInside)
+        openButton.addTarget(self, action: #selector(openButtonDown), for: .touchDown)
+        openButton.addTarget(self, action: #selector(openButtonUp),
+                             for: [.touchUpInside, .touchUpOutside, .touchCancel])
         openButton.translatesAutoresizingMaskIntoConstraints = false
         inputContainer.addSubview(openButton)
 
@@ -141,6 +144,7 @@ final class VideoViewController: UIViewController,
         tableView.rowHeight = 68
         tableView.sectionHeaderTopPadding = 12
         tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
+        tableView.keyboardDismissMode = .onDrag
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
@@ -177,6 +181,16 @@ final class VideoViewController: UIViewController,
         inputField.resignFirstResponder()
         inputField.text = ""
         openVideo(url: url)
+    }
+
+    @objc private func openButtonDown() {
+        openButton.alpha = 0.78
+    }
+
+    @objc private func openButtonUp() {
+        UIView.animate(withDuration: 0.15) {
+            self.openButton.alpha = 1
+        }
     }
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {

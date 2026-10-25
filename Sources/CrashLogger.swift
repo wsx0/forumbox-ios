@@ -45,18 +45,14 @@ enum CrashLogger {
 
     static func presentIfNeeded(from viewController: UIViewController?, previousAction: String?) {
         guard let viewController = viewController else { return }
-        let crash = (try? String(contentsOf: crashURL, encoding: .utf8)) ?? ""
+        guard let crash = try? String(contentsOf: crashURL, encoding: .utf8), !crash.isEmpty else {
+            return
+        }
         let action = previousAction ?? ((try? String(contentsOf: actionURL, encoding: .utf8)) ?? "")
-        let relevant = !crash.isEmpty
-            || action.contains("video")
-            || action.contains("safari")
-            || action.contains("tab selected 1")
-        guard relevant else { return }
-
-        let title = crash.isEmpty ? "上次操作记录" : "上次异常记录"
-        let detail = String(((crash.isEmpty ? "未捕获到异常堆栈（可能是系统级崩溃）" : crash)
-            + "\n\n最后操作：\n" + action).prefix(1400))
-        let alert = UIAlertController(title: title, message: detail, preferredStyle: .alert)
+        let detail = String((crash + "\n\n最后操作：\n" + action).prefix(1400))
+        let alert = UIAlertController(title: "上次异常记录",
+                                      message: detail,
+                                      preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "复制", style: .default) { _ in
             UIPasteboard.general.string = crash + "\n" + action
             CrashLogger.clearDiagnostics()
