@@ -15,6 +15,17 @@ final class VideoViewController: UIViewController,
     private let inputField = UITextField()
     private let openButton = UIButton(type: .system)
 
+    private lazy var favoritesButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "star"), for: .normal)
+        button.tintColor = Theme.textDim
+        button.accessibilityLabel = "视频收藏"
+        button.addTarget(self, action: #selector(openFavorites), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    private var videoFavoritesObserver: NSObjectProtocol?
+
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.minimumInteritemSpacing = 10
@@ -33,12 +44,24 @@ final class VideoViewController: UIViewController,
 
     private let sites = VideoSites.all
 
+    deinit {
+        if let observer = videoFavoritesObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         CrashLogger.log("video tab loaded")
         view.backgroundColor = Theme.bgTop
         setupHeader()
         setupGrid()
+        videoFavoritesObserver = NotificationCenter.default.addObserver(forName: .videoFavoritesChanged,
+                                                                       object: nil,
+                                                                       queue: .main) { [weak self] _ in
+            self?.updateFavoritesButton()
+        }
+        updateFavoritesButton()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -46,6 +69,7 @@ final class VideoViewController: UIViewController,
         CrashLogger.log("video tab will appear")
         navigationController?.setNavigationBarHidden(true, animated: animated)
         collectionView.reloadData()
+        updateFavoritesButton()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -88,6 +112,8 @@ final class VideoViewController: UIViewController,
         headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerSubtitleLabel)
 
+        header.addSubview(favoritesButton)
+
         inputContainer.backgroundColor = Theme.card
         inputContainer.layer.cornerRadius = 12
         inputContainer.layer.borderWidth = 1
@@ -128,11 +154,16 @@ final class VideoViewController: UIViewController,
 
             headerTitleLabel.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             headerTitleLabel.topAnchor.constraint(equalTo: header.topAnchor, constant: 6),
-            headerTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16),
+            headerTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: favoritesButton.leadingAnchor, constant: -8),
 
             headerSubtitleLabel.leadingAnchor.constraint(equalTo: headerTitleLabel.leadingAnchor),
             headerSubtitleLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 0),
-            headerSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16),
+            headerSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: favoritesButton.leadingAnchor, constant: -8),
+
+            favoritesButton.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -12),
+            favoritesButton.topAnchor.constraint(equalTo: header.topAnchor, constant: 0),
+            favoritesButton.widthAnchor.constraint(equalToConstant: 44),
+            favoritesButton.heightAnchor.constraint(equalToConstant: 44),
 
             inputContainer.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             inputContainer.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
@@ -203,25 +234,22 @@ final class VideoViewController: UIViewController,
 
     private func openVideo(url: URL, title: String? = nil) {
         guard navigationController?.topViewController === self else { return }
-        Haptics.tap()
         let host = url.host ?? "视频"
         let name = title ?? host
+        VideoOpener.open(url: url, title: name, from: self, navigation: navigationController)
+    }
 
-        if AppSettings.shared.videoUseSystemPlayer {
-            CrashLogger.log("open video system \(url.absoluteString)")
-            let safari = SFSafariViewController(url: url)
-            safari.preferredControlTintColor = Theme.accent
-            safari.modalPresentationStyle = .fullScreen
-            CrashLogger.log("presenting safari \(url.absoluteString)")
-            present(safari, animated: true) {
-                CrashLogger.log("safari presented \(url.absoluteString)")
-            }
-            return
-        }
+    @objc private func openFavorites() {
+        Haptics.tap()
+        navigationController?.pushViewController(VideoFavoritesViewController(style: .insetGrouped),
+                                                 animated: true)
+    }
 
-        CrashLogger.log("open video builtin \(url.absoluteString)")
-        let controller = WebViewController(title: name, urlString: url.absoluteString, videoMode: true)
-        navigationController?.pushViewController(controller, animated: true)
+    private func updateFavoritesButton() {
+        let count = VideoFavoriteStore.shared.items.count
+        favoritesButton.setImage(UIImage(systemName: count > 0 ? "star.fill" : "star"), for: .normal)
+        favoritesButton.tintColor = count > 0 ? Theme.accent : Theme.textDim
+        favoritesButton.accessibilityLabel = count > 0 ? "视频收藏，\(count) 条" : "视频收藏"
     }
 
     // MARK: - 卡片

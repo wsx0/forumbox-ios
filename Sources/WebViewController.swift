@@ -88,7 +88,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         webView.scrollView.refreshControl = refresh
 
         // 收藏在其他页面被修改时，同步星标
-        favoritesObserver = NotificationCenter.default.addObserver(forName: .favoritesChanged,
+        let favoriteNotification: Notification.Name = videoMode ? .videoFavoritesChanged : .favoritesChanged
+        favoritesObserver = NotificationCenter.default.addObserver(forName: favoriteNotification,
                                                                    object: nil,
                                                                    queue: .main) { [weak self] _ in
             self?.updateFavoriteButton()
@@ -886,6 +887,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     // MARK: - 收藏
 
     @objc private func toggleFavorite() {
+        if videoMode {
+            toggleVideoFavorite()
+            return
+        }
         let url = currentPageURL
         if let existing = FavoriteStore.shared.item(for: url) {
             let alert = UIAlertController(title: "取消收藏？", message: existing.title, preferredStyle: .alert)
@@ -927,6 +932,27 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         present(sheet, animated: true)
     }
 
+    private func toggleVideoFavorite() {
+        let url = currentPageURL
+        if let existing = VideoFavoriteStore.shared.item(for: url) {
+            let alert = UIAlertController(title: "取消视频收藏？",
+                                          message: existing.title,
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+            alert.addAction(UIAlertAction(title: "取消收藏", style: .destructive) { [weak self] _ in
+                VideoFavoriteStore.shared.remove(id: existing.id)
+                self?.updateFavoriteButton()
+            })
+            present(alert, animated: true)
+            return
+        }
+        var title = (webView?.title ?? site.name).trimmingCharacters(in: .whitespacesAndNewlines)
+        if title.isEmpty { title = site.name }
+        VideoFavoriteStore.shared.add(title: title, url: url)
+        Haptics.success()
+        updateFavoriteButton()
+    }
+
     private var currentPageURL: String {
         let url = webView?.url?.absoluteString ?? ""
         return url.isEmpty ? site.url : url
@@ -962,7 +988,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
     private func updateFavoriteButton() {
         guard isViewLoaded, webView != nil else { return }
-        let favorited = FavoriteStore.shared.isFavorited(url: currentPageURL)
+        let favorited = videoMode
+            ? VideoFavoriteStore.shared.isFavorited(url: currentPageURL)
+            : FavoriteStore.shared.isFavorited(url: currentPageURL)
         favoriteButton.image = UIImage(systemName: favorited ? "star.fill" : "star")
         favoriteButton.tintColor = favorited ? Theme.accent : nil
     }
