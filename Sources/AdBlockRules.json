@@ -1114,5 +1114,590 @@
     "action": {
       "type": "block"
     }
+  },
+  {
+    "trigger": {
+      "url-filter": "exdynsrv\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "magsrv\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "bngprm\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adsco\\.re",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "prpnads\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "ad-delivery\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adsafeprotected\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "moatads\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "doubleverify\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "amazon-adsystem\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "media\\.net",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "indexexchange\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "yieldmo\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "3lift\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "33across\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "gumgum\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "sovrn\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "lijit\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "advertising\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "zedo\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "adroll\\.com",
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "raw",
+        "media",
+        "svg-document",
+        "popup"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".adsbygoogle"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[data-ad]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[data-ad-slot]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[data-ad-client]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[id^=\"ad-\"]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[id*=\"-ad-\"]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[id$=\"-ad\"]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[class^=\"ad-\"]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[class*=\"-ad-\"]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[class$=\"-ad\"]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".advertisement"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".advert"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".ad-container"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".ad-wrapper"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".ad-banner"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".ad-slot"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".popunder"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".popup-ad"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".sticky-ad"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".floating-ad"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": ".overlay-ad"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[class*=\"advert\"]"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*"
+    },
+    "action": {
+      "type": "css-display-none",
+      "selector": "[id*=\"advert\"]"
+    }
   }
 ]

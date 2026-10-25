@@ -98,7 +98,7 @@ final class AppSettings {
     var videoUseSystemPlayer: Bool {
         get {
             if UserDefaults.standard.object(forKey: videoSystemPlayerKey) == nil {
-                return true
+                return false
             }
             return UserDefaults.standard.bool(forKey: videoSystemPlayerKey)
         }
@@ -106,7 +106,7 @@ final class AppSettings {
     }
 
     var videoPlayerName: String {
-        return videoUseSystemPlayer ? "系统播放器" : "内置播放器"
+        return videoUseSystemPlayer ? "系统播放器" : "内置播放器（去广告）"
     }
 
     // MARK: - 背景图

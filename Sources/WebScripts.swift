@@ -67,4 +67,32 @@ enum WebScripts {
         } catch (e) {}
     })();
     """
+
+
+    /// 视频模式：清理常见广告位 / 浮层 / 弹窗容器
+    static let videoAdCleaner = """
+    (function () {
+        try {
+            var selectors = [
+                '.adsbygoogle', '[data-ad]', '[data-ad-slot]', '[data-ad-client]',
+                '[id^="ad-"]', '[id*="-ad-"]', '[id$="-ad"]',
+                '[class^="ad-"]', '[class*="-ad-"]', '[class$="-ad-"]',
+                '.advertisement', '.advert', '.ad-container', '.ad-wrapper',
+                '.ad-banner', '.ad-slot', '.popunder', '.popup-ad',
+                '.sticky-ad', '.floating-ad', '.overlay-ad',
+                '[class*="advert"]', '[id*="advert"]'
+            ];
+            function clean() {
+                for (var i = 0; i < selectors.length; i++) {
+                    var list = document.querySelectorAll(selectors[i]);
+                    for (var j = 0; j < list.length; j++) {
+                        try { list[j].remove(); } catch (e) {}
+                    }
+                }
+            }
+            clean();
+            setInterval(clean, 2000);
+        } catch (e) {}
+    })();
+    """
 }

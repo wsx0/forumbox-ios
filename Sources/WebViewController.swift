@@ -164,6 +164,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             ucc.addUserScript(WKUserScript(source: WebScripts.videoEnhancer,
                                            injectionTime: .atDocumentEnd,
                                            forMainFrameOnly: true))
+            ucc.addUserScript(WKUserScript(source: WebScripts.videoAdCleaner,
+                                           injectionTime: .atDocumentEnd,
+                                           forMainFrameOnly: false))
         }
         contentController = ucc
 
