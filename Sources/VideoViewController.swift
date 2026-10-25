@@ -256,8 +256,8 @@ final class VideoViewController: UIViewController,
 
     @objc private func openFavorites() {
         Haptics.tap()
-        navigationController?.pushViewController(VideoFavoritesViewController(style: .insetGrouped),
-                                                 animated: true)
+        CrashLogger.log("open favorites tab")
+        tabBarController?.selectedIndex = 2
     }
 
     private func updateFavoritesButton() {
