@@ -5,7 +5,7 @@ struct VideoFavorite: Codable, Equatable {
     var title: String
     let url: String
     var thumbnailURL: String?
-    let createdAt: Date
+    var createdAt: Date
 }
 
 extension Notification.Name {
@@ -42,6 +42,7 @@ final class VideoFavoriteStore {
             if let thumbnailURL = thumbnailURL, !thumbnailURL.isEmpty {
                 items[index].thumbnailURL = thumbnailURL
             }
+            items[index].createdAt = Date()
             let item = items.remove(at: index)
             items.insert(item, at: 0)
             persist()

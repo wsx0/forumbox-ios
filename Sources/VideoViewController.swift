@@ -1,5 +1,4 @@
 import UIKit
-import SafariServices
 
 /// 视频 Tab：固定头部 + 两列站点卡片
 final class VideoViewController: UIViewController,
@@ -24,6 +23,7 @@ final class VideoViewController: UIViewController,
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
+    private let favoritesBadge = UILabel()
     private var videoFavoritesObserver: NSObjectProtocol?
 
     private lazy var collectionView: UICollectionView = {
@@ -114,6 +114,16 @@ final class VideoViewController: UIViewController,
 
         header.addSubview(favoritesButton)
 
+        favoritesBadge.font = Theme.rounded(9, .bold)
+        favoritesBadge.textColor = Theme.onAccent
+        favoritesBadge.backgroundColor = Theme.accent
+        favoritesBadge.textAlignment = .center
+        favoritesBadge.layer.cornerRadius = 8
+        favoritesBadge.clipsToBounds = true
+        favoritesBadge.isHidden = true
+        favoritesBadge.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(favoritesBadge)
+
         inputContainer.backgroundColor = Theme.card
         inputContainer.layer.cornerRadius = 12
         inputContainer.layer.borderWidth = 1
@@ -164,6 +174,11 @@ final class VideoViewController: UIViewController,
             favoritesButton.topAnchor.constraint(equalTo: header.topAnchor, constant: 0),
             favoritesButton.widthAnchor.constraint(equalToConstant: 44),
             favoritesButton.heightAnchor.constraint(equalToConstant: 44),
+
+            favoritesBadge.centerXAnchor.constraint(equalTo: favoritesButton.trailingAnchor, constant: -9),
+            favoritesBadge.centerYAnchor.constraint(equalTo: favoritesButton.topAnchor, constant: 9),
+            favoritesBadge.heightAnchor.constraint(equalToConstant: 16),
+            favoritesBadge.widthAnchor.constraint(greaterThanOrEqualToConstant: 16),
 
             inputContainer.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             inputContainer.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
@@ -250,6 +265,8 @@ final class VideoViewController: UIViewController,
         favoritesButton.setImage(UIImage(systemName: count > 0 ? "star.fill" : "star"), for: .normal)
         favoritesButton.tintColor = count > 0 ? Theme.accent : Theme.textDim
         favoritesButton.accessibilityLabel = count > 0 ? "视频收藏，\(count) 条" : "视频收藏"
+        favoritesBadge.text = count > 99 ? "99+" : "\(count)"
+        favoritesBadge.isHidden = count == 0
     }
 
     // MARK: - 卡片

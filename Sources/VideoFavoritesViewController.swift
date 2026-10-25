@@ -228,15 +228,17 @@ final class VideoFavoriteRowCell: UITableViewCell {
         formatter.dateFormat = "MM-dd HH:mm"
         metaLabel.text = "\(host) · \(formatter.string(from: item.createdAt))"
 
+        task?.cancel()
+        task = nil
         if let thumb = item.thumbnailURL, !thumb.isEmpty {
-            loadThumbnail(thumb)
+            loadThumbnail(thumb, referer: item.url)
         } else {
             currentThumbURL = nil
             showFallback()
         }
     }
 
-    private func loadThumbnail(_ urlString: String) {
+    private func loadThumbnail(_ urlString: String, referer: String) {
         currentThumbURL = urlString
         if let cached = Self.imageCache.object(forKey: urlString as NSString) {
             showImage(cached)
@@ -245,7 +247,11 @@ final class VideoFavoriteRowCell: UITableViewCell {
         showFallback()
         guard let url = URL(string: urlString) else { return }
         task?.cancel()
-        task = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+        var request = URLRequest(url: url)
+        request.setValue(referer, forHTTPHeaderField: "Referer")
+        request.setValue(UserAgents.mobileSafari, forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 15
+        task = URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
             guard let data = data, let image = UIImage(data: data) else { return }
             Self.imageCache.setObject(image, forKey: urlString as NSString)
             DispatchQueue.main.async {

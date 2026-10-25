@@ -112,12 +112,17 @@ enum WebScripts {
             }
             var title = meta('meta[property="og:title"]')
                 || meta('meta[name="twitter:title"]')
+                || meta('meta[name="title"]')
                 || meta('meta[itemprop="name"]')
                 || (document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '')
                 || document.title
                 || '';
             var image = meta('meta[property="og:image"]')
+                || meta('meta[property="og:image:url"]')
+                || meta('meta[property="og:image:secure_url"]')
                 || meta('meta[name="twitter:image"]')
+                || meta('meta[name="twitter:image:src"]')
+                || meta('meta[name="thumbnail"]')
                 || meta('link[rel="image_src"]')
                 || meta('meta[itemprop="thumbnailUrl"]');
             if (!image) {
