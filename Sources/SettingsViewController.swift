@@ -104,7 +104,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
             appearance.append(.removeBackground)
         }
         appearance.append(.resetAppearance)
-        rows = [appearance, [.videoPlayer, .manageVideoSites], [.manageSites], [.version]]
+        rows = [appearance, [.videoPlayer], [.manageVideoSites, .manageSites], [.version]]
     }
 
     // MARK: - 表格
@@ -121,7 +121,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         switch section {
         case 0: return "外观"
         case 1: return "视频"
-        case 2: return "论坛"
+        case 2: return "站点"
         default: return "关于"
         }
     }

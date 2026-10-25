@@ -964,10 +964,65 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         }
         captureVideoMetadata { [weak self] title, image in
             guard let self = self else { return }
-            VideoFavoriteStore.shared.add(title: title, url: url, thumbnailURL: image)
-            Haptics.success()
-            self.updateFavoriteButton()
+            self.chooseVideoFolder(title: title, url: url, image: image)
         }
+    }
+
+    private func chooseVideoFolder(title: String, url: String, image: String?) {
+        let folders = VideoFavoriteStore.shared.folders
+        guard !folders.isEmpty else {
+            promptNewVideoFolder(title: title, url: url, image: image)
+            return
+        }
+
+        let sheet = UIAlertController(title: "收藏到视频收藏夹",
+                                      message: nil,
+                                      preferredStyle: .actionSheet)
+        for folder in folders {
+            sheet.addAction(UIAlertAction(title: folder.name, style: .default) { [weak self] _ in
+                self?.saveVideoFavorite(title: title, url: url, image: image, folderId: folder.id)
+            })
+        }
+        sheet.addAction(UIAlertAction(title: "新建收藏夹…", style: .default) { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                self?.promptNewVideoFolder(title: title, url: url, image: image)
+            }
+        })
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        if let pop = sheet.popoverPresentationController {
+            pop.barButtonItem = favoriteButton
+        }
+        present(sheet, animated: true)
+    }
+
+    private func saveVideoFavorite(title: String,
+                                   url: String,
+                                   image: String?,
+                                   folderId: UUID) {
+        VideoFavoriteStore.shared.add(title: title,
+                                      url: url,
+                                      thumbnailURL: image,
+                                      folderId: folderId)
+        Haptics.success()
+        updateFavoriteButton()
+    }
+
+    private func promptNewVideoFolder(title: String, url: String, image: String?) {
+        let alert = UIAlertController(title: "新建视频收藏夹",
+                                      message: nil,
+                                      preferredStyle: .alert)
+        alert.addTextField { field in
+            field.placeholder = "收藏夹名称"
+        }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "创建并收藏", style: .default) { [weak self, weak alert] _ in
+            guard let self = self,
+                  let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !name.isEmpty else { return }
+            let folder = VideoFavoriteStore.shared.addFolder(name: name)
+            self.saveVideoFavorite(title: title, url: url, image: image, folderId: folder.id)
+        })
+        present(alert, animated: true)
     }
 
     private func captureVideoMetadata(completion: @escaping (String, String?) -> Void) {
