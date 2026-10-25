@@ -37,6 +37,7 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate, Scr
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        CrashLogger.log("video tab will appear")
         navigationController?.setNavigationBarHidden(true, animated: animated)
         reload()
     }
@@ -261,7 +262,10 @@ final class VideoViewController: UITableViewController, UITextFieldDelegate, Scr
             let safari = SFSafariViewController(url: url)
             safari.preferredControlTintColor = Theme.accent
             safari.modalPresentationStyle = .fullScreen
-            present(safari, animated: true)
+            CrashLogger.log("presenting safari \(url.absoluteString)")
+            present(safari, animated: true) {
+                CrashLogger.log("safari presented \(url.absoluteString)")
+            }
             return
         }
 

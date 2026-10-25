@@ -68,6 +68,7 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
 
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
         UserDefaults.standard.set(selectedIndex, forKey: lastTabKey)
+        CrashLogger.log("tab selected \(selectedIndex)")
         Haptics.tap()
     }
 
