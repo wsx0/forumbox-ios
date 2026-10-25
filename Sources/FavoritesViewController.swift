@@ -3,16 +3,14 @@ import UIKit
 /// 收藏 Tab：收藏夹列表 + 最近收藏（分组列表）
 final class FavoritesViewController: UITableViewController {
 
-    private lazy var addFolderButton = UIBarButtonItem(barButtonSystemItem: .add,
-                                                       target: self,
-                                                       action: #selector(addFolder))
+    private lazy var addFolderButton = makeHeaderIconButton(systemName: "plus",
+                                                            action: #selector(addFolder))
 
-    private lazy var settingsButton = UIBarButtonItem(image: UIImage(systemName: "gearshape"),
-                                                      style: .plain,
-                                                      target: self,
-                                                      action: #selector(openSettings))
+    private lazy var settingsButton = makeHeaderIconButton(systemName: "gearshape",
+                                                           action: #selector(openSettings))
 
-    private lazy var navTitle = NavTitleView(title: "收藏", subtitle: nil)
+    private let headerTitleLabel = UILabel()
+    private let headerSubtitleLabel = UILabel()
     private let emptyHint = UILabel()
     private var favoritesObserver: NSObjectProtocol?
 
@@ -35,11 +33,11 @@ final class FavoritesViewController: UITableViewController {
         tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
         tableView.register(FavoriteRowCell.self, forCellReuseIdentifier: FavoriteRowCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
-
-        navigationItem.title = ""
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: navTitle)
-        navigationItem.rightBarButtonItems = [addFolderButton, settingsButton]
+        navigationItem.title = "收藏"
+        navigationItem.leftBarButtonItem = nil
+        navigationItem.rightBarButtonItems = nil
         navigationController?.navigationBar.prefersLargeTitles = false
+        setupHeader()
 
         let background = Theme.makeBackgroundView(tableView.bounds)
         tableView.backgroundView = background
@@ -64,9 +62,15 @@ final class FavoritesViewController: UITableViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
         tableView.reloadData()
         updateEmptyHint()
         updateNavTitle()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
     }
 
     override func viewDidLayoutSubviews() {
@@ -77,6 +81,58 @@ final class FavoritesViewController: UITableViewController {
         }
     }
 
+    private func makeHeaderIconButton(systemName: String, action: Selector) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: systemName), for: .normal)
+        button.tintColor = Theme.textDim
+        button.addTarget(self, action: action, for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 44),
+            button.heightAnchor.constraint(equalToConstant: 44)
+        ])
+        return button
+    }
+
+    private func setupHeader() {
+        let width = max(tableView.bounds.width, view.bounds.width)
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 56))
+        header.backgroundColor = .clear
+
+        headerTitleLabel.text = "收藏"
+        headerTitleLabel.font = Theme.rounded(20, .bold)
+        headerTitleLabel.textColor = Theme.text
+        headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(headerTitleLabel)
+
+        headerSubtitleLabel.font = Theme.font(12, .regular)
+        headerSubtitleLabel.textColor = Theme.textDim
+        headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(headerSubtitleLabel)
+
+        let actions = UIStackView(arrangedSubviews: [addFolderButton, settingsButton])
+        actions.axis = .horizontal
+        actions.spacing = 2
+        actions.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(actions)
+
+        NSLayoutConstraint.activate([
+            headerTitleLabel.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            headerTitleLabel.topAnchor.constraint(equalTo: header.topAnchor, constant: 6),
+            headerTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: actions.leadingAnchor, constant: -8),
+
+            headerSubtitleLabel.leadingAnchor.constraint(equalTo: headerTitleLabel.leadingAnchor),
+            headerSubtitleLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 0),
+            headerSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: actions.leadingAnchor, constant: -8),
+
+            actions.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -8),
+            actions.centerYAnchor.constraint(equalTo: header.centerYAnchor)
+        ])
+
+        tableView.tableHeaderView = header
+        updateNavTitle()
+    }
+
     private func updateEmptyHint() {
         emptyHint.isHidden = !FavoriteStore.shared.items.isEmpty
     }
@@ -84,7 +140,7 @@ final class FavoritesViewController: UITableViewController {
     private func updateNavTitle() {
         let folders = FavoriteStore.shared.folders.count + 1
         let items = FavoriteStore.shared.items.count
-        navTitle.update(subtitle: "\(folders) 个收藏夹 · \(items) 条收藏")
+        headerSubtitleLabel.text = "\(folders) 个收藏夹 · \(items) 条收藏"
     }
 
     // MARK: - 动作
@@ -154,7 +210,8 @@ final class FavoritesViewController: UITableViewController {
         }
         sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         if let pop = sheet.popoverPresentationController {
-            pop.barButtonItem = addFolderButton
+            pop.sourceView = addFolderButton
+            pop.sourceRect = addFolderButton.bounds
         }
         present(sheet, animated: true)
     }

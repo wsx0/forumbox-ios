@@ -10,14 +10,13 @@ final class SitesViewController: UITableViewController {
                                                  target: self,
                                                  action: #selector(addSite))
 
-    private lazy var settingsButton = UIBarButtonItem(image: UIImage(systemName: "gearshape"),
-                                                      style: .plain,
-                                                      target: self,
-                                                      action: #selector(openSettings))
+    private lazy var settingsButton = makeHeaderIconButton(systemName: "gearshape",
+                                                           action: #selector(openSettings))
 
     private lazy var signButton = makePrimaryButton(title: "一键签到", icon: "checkmark.seal.fill")
     private lazy var cloudButton = makeTonalButton(title: "115 网盘", icon: "cloud")
-    private lazy var navTitle = NavTitleView(title: "论坛", subtitle: nil)
+    private let headerTitleLabel = UILabel()
+    private let headerSubtitleLabel = UILabel()
     private lazy var editButton = UIBarButtonItem(image: UIImage(systemName: "slider.horizontal.3"),
                                                   style: .plain,
                                                   target: self,
@@ -45,9 +44,9 @@ final class SitesViewController: UITableViewController {
             navigationItem.title = "站点管理"
             navigationItem.rightBarButtonItems = [addButton, editButton]
         } else {
-            navigationItem.title = ""
-            navigationItem.leftBarButtonItem = UIBarButtonItem(customView: navTitle)
-            navigationItem.rightBarButtonItems = [settingsButton]
+            navigationItem.title = "论坛"
+            navigationItem.leftBarButtonItem = nil
+            navigationItem.rightBarButtonItems = nil
         }
         navigationController?.navigationBar.prefersLargeTitles = false
         tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
@@ -61,7 +60,14 @@ final class SitesViewController: UITableViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(!managementMode, animated: animated)
         updateHeaderHint()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // 进入网页 / 设置 / 站点管理时恢复导航栏
+        navigationController?.setNavigationBarHidden(false, animated: animated)
     }
 
     override func viewDidLayoutSubviews() {
@@ -115,10 +121,36 @@ final class SitesViewController: UITableViewController {
         return button
     }
 
+    private func makeHeaderIconButton(systemName: String, action: Selector) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: systemName), for: .normal)
+        button.tintColor = Theme.textDim
+        button.addTarget(self, action: action, for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 44),
+            button.heightAnchor.constraint(equalToConstant: 44)
+        ])
+        return button
+    }
+
     private func setupHeader() {
         let width = max(tableView.bounds.width, view.bounds.width)
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 64))
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 104))
         header.backgroundColor = .clear
+
+        headerTitleLabel.text = "论坛"
+        headerTitleLabel.font = Theme.rounded(20, .bold)
+        headerTitleLabel.textColor = Theme.text
+        headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(headerTitleLabel)
+
+        headerSubtitleLabel.font = Theme.font(12, .regular)
+        headerSubtitleLabel.textColor = Theme.textDim
+        headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(headerSubtitleLabel)
+
+        header.addSubview(settingsButton)
 
         let stack = UIStackView(arrangedSubviews: [signButton, cloudButton])
         stack.axis = .horizontal
@@ -128,7 +160,18 @@ final class SitesViewController: UITableViewController {
         header.addSubview(stack)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 8),
+            headerTitleLabel.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            headerTitleLabel.topAnchor.constraint(equalTo: header.topAnchor, constant: 6),
+            headerTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: settingsButton.leadingAnchor, constant: -8),
+
+            headerSubtitleLabel.leadingAnchor.constraint(equalTo: headerTitleLabel.leadingAnchor),
+            headerSubtitleLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 0),
+            headerSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -16),
+
+            settingsButton.topAnchor.constraint(equalTo: header.topAnchor, constant: 0),
+            settingsButton.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -12),
+
+            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 56),
             stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
             stack.heightAnchor.constraint(equalToConstant: 40)
@@ -143,7 +186,7 @@ final class SitesViewController: UITableViewController {
         if managementMode {
             navigationItem.title = "站点管理"
         } else {
-            navTitle.update(subtitle: "\(Sites.all.count) 个论坛 · 可签到 \(signCount) 个")
+            headerSubtitleLabel.text = "\(Sites.all.count) 个论坛 · 可签到 \(signCount) 个"
         }
     }
 
