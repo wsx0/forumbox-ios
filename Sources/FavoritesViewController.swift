@@ -326,9 +326,9 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         switch segment {
         case .videos:
-            return videoFolders.isEmpty ? 80 : 68 * AppSettings.shared.fontScale
+            return videoFolders.isEmpty ? 80 * AppSettings.shared.fontScale : 68 * AppSettings.shared.fontScale
         case .forums:
-            return folders.isEmpty ? 80 : 68 * AppSettings.shared.fontScale
+            return folders.isEmpty ? 80 * AppSettings.shared.fontScale : 68 * AppSettings.shared.fontScale
         }
     }
 
@@ -338,7 +338,7 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
             if videoFolders.isEmpty {
                 let cell = tableView.dequeueReusableCell(withIdentifier: FavoritesEmptyCell.reuseID,
                                                          for: indexPath) as! FavoritesEmptyCell
-                cell.configure(text: "还没有视频收藏夹\n点右上角 + 新建收藏夹")
+                cell.configure(text: "还没有视频收藏夹\n点右上角 + 新建收藏夹", icon: "play.rectangle")
                 return cell
             }
             let folder = videoFolders[indexPath.row]
@@ -353,7 +353,7 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
             if folders.isEmpty {
                 let cell = tableView.dequeueReusableCell(withIdentifier: FavoritesEmptyCell.reuseID,
                                                          for: indexPath) as! FavoritesEmptyCell
-                cell.configure(text: "还没有论坛收藏夹\n点右上角 + 新建收藏夹")
+                cell.configure(text: "还没有论坛收藏夹\n点右上角 + 新建收藏夹", icon: "folder")
                 return cell
             }
             let folder = folders[indexPath.row]
@@ -426,22 +426,46 @@ final class FavoritesEmptyCell: UITableViewCell {
 
     static let reuseID = "FavoritesEmptyCell"
 
+    private let iconView = UIImageView()
+    private let label = UILabel()
+
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         backgroundColor = .clear
         contentView.backgroundColor = .clear
         selectionStyle = .none
-        textLabel?.numberOfLines = 0
-        textLabel?.textAlignment = .center
-        textLabel?.font = Theme.font(13, .regular)
-        textLabel?.textColor = Theme.textDim
+
+        iconView.contentMode = .scaleAspectFit
+        iconView.tintColor = Theme.textFaint
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(iconView)
+
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.font = Theme.font(13, .regular)
+        label.textColor = Theme.textDim
+        label.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            iconView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            iconView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            iconView.widthAnchor.constraint(equalToConstant: 22),
+            iconView.heightAnchor.constraint(equalToConstant: 22),
+
+            label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+            label.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 6),
+            label.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -8)
+        ])
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(text: String) {
-        textLabel?.text = text
+    func configure(text: String, icon: String = "folder") {
+        label.text = text
+        iconView.image = UIImage(systemName: icon)
     }
 }

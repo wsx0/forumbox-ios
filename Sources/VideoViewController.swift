@@ -8,6 +8,7 @@ final class VideoViewController: UIViewController,
                                 ScrollToTopable {
 
     private let header = UIView()
+    private var backgroundView: UIView?
     private let headerTitleLabel = UILabel()
     private let headerSubtitleLabel = UILabel()
     private let inputContainer = UIView()
@@ -59,6 +60,11 @@ final class VideoViewController: UIViewController,
         super.viewDidLoad()
         CrashLogger.log("video tab loaded")
         view.backgroundColor = Theme.bgTop
+        let background = Theme.makeBackgroundView(view.bounds)
+        background.frame = view.bounds
+        background.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.insertSubview(background, at: 0)
+        backgroundView = background
         sites = VideoSiteStore.shared.sites
         setupHeader()
         setupGrid()
@@ -90,7 +96,7 @@ final class VideoViewController: UIViewController,
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        collectionView.backgroundView?.frame = collectionView.bounds
+        backgroundView?.frame = view.bounds
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
@@ -107,7 +113,7 @@ final class VideoViewController: UIViewController,
     // MARK: - 头部
 
     private func setupHeader() {
-        header.backgroundColor = Theme.bgTop
+        header.backgroundColor = .clear
         header.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(header)
 
@@ -221,8 +227,6 @@ final class VideoViewController: UIViewController,
     private func setupGrid() {
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(collectionView)
-        collectionView.backgroundView = Theme.makeBackgroundView(collectionView.bounds)
-
         emptyLabel.text = "还没有视频站点\n到 设置 → 视频站点 添加"
         emptyLabel.numberOfLines = 0
         emptyLabel.textAlignment = .center
