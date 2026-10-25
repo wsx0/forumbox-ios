@@ -22,4 +22,14 @@ extension String {
         if hasPrefix("http://") { return String(dropFirst(7)) }
         return self
     }
+
+    /// 列表头像用的首字（跳过【】括号等符号）
+    var identityInitial: String {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        let skipped = Set("【】[]（）()「」『』《》〈〉“”\"'#*·-— ")
+        if let first = trimmed.first(where: { !skipped.contains($0) }) {
+            return String(first).uppercased()
+        }
+        return "·"
+    }
 }

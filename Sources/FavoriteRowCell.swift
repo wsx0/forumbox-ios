@@ -80,8 +80,7 @@ final class FavoriteRowCell: UITableViewCell {
 
     func configure(emoji: String, title: String, meta: String) {
         if Theme.isPlainStyle {
-            let initial = title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1)
-            emojiLabel.text = initial.isEmpty ? "·" : String(initial)
+            emojiLabel.text = title.identityInitial
             emojiLabel.font = Theme.rounded(17, .semibold)
             emojiLabel.textColor = Theme.textDim
             emojiBackground.backgroundColor = Theme.tonal
