@@ -862,11 +862,21 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             return
         }
 
-        let sheet = UIAlertController(title: "收藏到", message: nil, preferredStyle: .actionSheet)
-        sheet.addAction(UIAlertAction(title: "未分类", style: .default) { [weak self] _ in
-            self?.saveFavorite(folderId: nil)
-        })
-        for folder in FavoriteStore.shared.folders {
+        let folders = FavoriteStore.shared.folders
+        guard !folders.isEmpty else {
+            let alert = UIAlertController(title: "还没有收藏夹",
+                                          message: "收藏只保存在收藏夹里，先新建一个收藏夹吧",
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "新建收藏夹", style: .default) { [weak self] _ in
+                self?.promptNewFolderAndSave()
+            })
+            alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+            present(alert, animated: true)
+            return
+        }
+
+        let sheet = UIAlertController(title: "收藏到收藏夹", message: nil, preferredStyle: .actionSheet)
+        for folder in folders {
             sheet.addAction(UIAlertAction(title: folder.name, style: .default) { [weak self] _ in
                 self?.saveFavorite(folderId: folder.id)
             })
@@ -886,7 +896,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         return url.isEmpty ? site.url : url
     }
 
-    private func saveFavorite(folderId: UUID?) {
+    private func saveFavorite(folderId: UUID) {
         var title = (webView?.title ?? site.name).trimmingCharacters(in: .whitespacesAndNewlines)
         if title.isEmpty { title = site.name }
         FavoriteStore.shared.add(title: title,

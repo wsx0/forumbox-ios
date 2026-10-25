@@ -36,16 +36,28 @@ final class FavoriteStore {
            let decoded = try? JSONDecoder().decode([FavoriteItem].self, from: data) {
             items = decoded
         }
+
+        // 旧数据里的「未分类」收藏统一迁移到默认收藏夹，保证收藏只存在收藏夹里
+        if items.contains(where: { $0.folderId == nil }) {
+            let name = "默认收藏夹"
+            let folder: FavoriteFolder
+            if let existing = folders.first(where: { $0.name == name }) {
+                folder = existing
+            } else {
+                folder = FavoriteFolder(id: UUID(), name: name, createdAt: Date())
+                folders.append(folder)
+            }
+            for index in items.indices where items[index].folderId == nil {
+                items[index].folderId = folder.id
+            }
+            persist()
+        }
     }
 
     // MARK: - 查询
 
     func items(in folderId: UUID?) -> [FavoriteItem] {
         return items.filter { $0.folderId == folderId }.sorted { $0.createdAt > $1.createdAt }
-    }
-
-    func allItemsSorted() -> [FavoriteItem] {
-        return items.sorted { $0.createdAt > $1.createdAt }
     }
 
     func count(in folderId: UUID?) -> Int {
@@ -58,11 +70,6 @@ final class FavoriteStore {
 
     func item(for url: String) -> FavoriteItem? {
         return items.first { $0.url == url }
-    }
-
-    func folderName(for folderId: UUID?) -> String {
-        guard let folderId = folderId else { return "未分类" }
-        return folders.first { $0.id == folderId }?.name ?? "未分类"
     }
 
     // MARK: - 收藏
@@ -90,11 +97,6 @@ final class FavoriteStore {
         persist()
     }
 
-    func remove(url: String) {
-        items.removeAll { $0.url == url }
-        persist()
-    }
-
     func move(id: UUID, to folderId: UUID?) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         items[index].folderId = folderId
@@ -117,12 +119,10 @@ final class FavoriteStore {
         persist()
     }
 
-    /// 删除收藏夹（夹内收藏移到「未分类」）
+    /// 删除收藏夹（夹内收藏一并删除）
     func deleteFolder(id: UUID) {
         folders.removeAll { $0.id == id }
-        for index in items.indices where items[index].folderId == id {
-            items[index].folderId = nil
-        }
+        items.removeAll { $0.folderId == id }
         persist()
     }
 

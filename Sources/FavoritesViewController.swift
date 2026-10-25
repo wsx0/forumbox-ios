@@ -1,6 +1,6 @@
 import UIKit
 
-/// 收藏 Tab：收藏夹列表 + 最近收藏（分组列表）
+/// 收藏 Tab：只有收藏夹（收藏只保存在收藏夹里，不再显示最近收藏 / 未分类）
 final class FavoritesViewController: UITableViewController {
 
     private lazy var addFolderButton = makeHeaderIconButton(systemName: "plus",
@@ -27,11 +27,10 @@ final class FavoritesViewController: UITableViewController {
         tableView.separatorStyle = .singleLine
         tableView.separatorColor = Theme.cardBorder
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
-        tableView.rowHeight = 68
+        tableView.rowHeight = 68 * AppSettings.shared.fontScale
         tableView.sectionHeaderTopPadding = 12
         tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
         tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
-        tableView.register(FavoriteRowCell.self, forCellReuseIdentifier: FavoriteRowCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
         navigationItem.title = "收藏"
         navigationItem.leftBarButtonItem = nil
@@ -41,7 +40,7 @@ final class FavoritesViewController: UITableViewController {
 
         let background = Theme.makeBackgroundView(tableView.bounds)
         tableView.backgroundView = background
-        emptyHint.text = "还没有收藏\n\n在任意帖子页面点右上角 ☆ 即可收藏"
+        emptyHint.text = "还没有收藏夹\n\n点右上角 + 新建收藏夹，收藏的帖子会保存在里面"
         emptyHint.numberOfLines = 0
         emptyHint.textAlignment = .center
         emptyHint.textColor = Theme.textDim
@@ -58,6 +57,7 @@ final class FavoritesViewController: UITableViewController {
             self?.updateNavTitle()
         }
         updateNavTitle()
+        updateEmptyHint()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -79,7 +79,15 @@ final class FavoritesViewController: UITableViewController {
         if let background = tableView.backgroundView {
             emptyHint.frame = background.bounds
         }
+        if let header = tableView.tableHeaderView, header.frame.width != tableView.bounds.width {
+            header.frame.size.width = tableView.bounds.width
+            tableView.tableHeaderView = header
+        }
     }
+
+    override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
+
+    // MARK: - 头部
 
     private func makeHeaderIconButton(systemName: String, action: Selector) -> UIButton {
         let button = UIButton(type: .system)
@@ -134,11 +142,11 @@ final class FavoritesViewController: UITableViewController {
     }
 
     private func updateEmptyHint() {
-        emptyHint.isHidden = !FavoriteStore.shared.items.isEmpty
+        emptyHint.isHidden = !FavoriteStore.shared.folders.isEmpty
     }
 
     private func updateNavTitle() {
-        let folders = FavoriteStore.shared.folders.count + 1
+        let folders = FavoriteStore.shared.folders.count
         let items = FavoriteStore.shared.items.count
         headerSubtitleLabel.text = "\(folders) 个收藏夹 · \(items) 条收藏"
     }
@@ -174,90 +182,52 @@ final class FavoritesViewController: UITableViewController {
             }
             self.tableView.reloadData()
             self.updateNavTitle()
+            self.updateEmptyHint()
         })
         present(alert, animated: true)
     }
 
     private func confirmDeleteFolder(_ folder: FavoriteFolder) {
+        let count = FavoriteStore.shared.count(in: folder.id)
+        let message = count > 0
+            ? "夹内的 \(count) 条收藏会一起删除，删除后不可恢复。"
+            : "删除后不可恢复。"
         let alert = UIAlertController(title: "删除收藏夹「\(folder.name)」？",
-                                      message: "夹内的收藏会移动到「未分类」。",
+                                      message: message,
                                       preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "取消", style: .cancel))
         alert.addAction(UIAlertAction(title: "删除", style: .destructive) { [weak self] _ in
             FavoriteStore.shared.deleteFolder(id: folder.id)
             self?.tableView.reloadData()
             self?.updateNavTitle()
+            self?.updateEmptyHint()
         })
         present(alert, animated: true)
     }
 
-    private func openFolder(_ folderId: UUID?, title: String) {
-        let controller = FavoritesListViewController(folderId: folderId, folderTitle: title)
+    private func openFolder(_ folder: FavoriteFolder) {
+        let controller = FavoritesListViewController(folderId: folder.id, folderTitle: folder.name)
         navigationController?.pushViewController(controller, animated: true)
-    }
-
-    private func presentMovePicker(item: FavoriteItem) {
-        let sheet = UIAlertController(title: "移动到收藏夹", message: nil, preferredStyle: .actionSheet)
-        sheet.addAction(UIAlertAction(title: "未分类", style: .default) { [weak self] _ in
-            FavoriteStore.shared.move(id: item.id, to: nil)
-            self?.tableView.reloadData()
-        })
-        for folder in FavoriteStore.shared.folders {
-            sheet.addAction(UIAlertAction(title: folder.name, style: .default) { [weak self] _ in
-                FavoriteStore.shared.move(id: item.id, to: folder.id)
-                self?.tableView.reloadData()
-            })
-        }
-        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
-        if let pop = sheet.popoverPresentationController {
-            pop.sourceView = addFolderButton
-            pop.sourceRect = addFolderButton.bounds
-        }
-        present(sheet, animated: true)
     }
 
     // MARK: - 数据
 
-    private struct FolderRow {
-        let id: UUID?
-        let name: String
-        let count: Int
-    }
-
-    private var folderRows: [FolderRow] {
-        var rows: [FolderRow] = [FolderRow(id: nil, name: "未分类", count: FavoriteStore.shared.count(in: nil))]
-        for folder in FavoriteStore.shared.folders {
-            rows.append(FolderRow(id: folder.id,
-                                  name: folder.name,
-                                  count: FavoriteStore.shared.count(in: folder.id)))
-        }
-        return rows
-    }
-
-    private var recentItems: [FavoriteItem] {
-        return FavoriteStore.shared.allItemsSorted()
+    private var folderRows: [FavoriteFolder] {
+        return FavoriteStore.shared.folders
     }
 
     // MARK: - 表格
 
-    override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
-
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return recentItems.isEmpty ? 1 : 2
+        return folderRows.isEmpty ? 0 : 1
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 0 {
-            return folderRows.count
-        }
-        return recentItems.count
+        return folderRows.count
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        if section == 0 {
-            return "收藏夹"
-        }
-        return recentItems.isEmpty ? nil : "最近收藏（\(recentItems.count)）"
+        return "收藏夹"
     }
 
     override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
@@ -267,80 +237,38 @@ final class FavoritesViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        let scale = AppSettings.shared.fontScale
-        return (indexPath.section == 0 ? 68 : 82) * scale
+        return 68 * AppSettings.shared.fontScale
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if indexPath.section == 0 {
-            let row = folderRows[indexPath.row]
-            let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
-                                                     for: indexPath) as! SiteRowCell
-            cell.configure(emoji: row.id == nil ? "📥" : "📁",
-                           title: row.name,
-                           subtitle: "\(row.count) 条收藏")
-            return cell
-        }
-        let item = recentItems[indexPath.row]
-        let cell = tableView.dequeueReusableCell(withIdentifier: FavoriteRowCell.reuseID,
-                                                 for: indexPath) as! FavoriteRowCell
-        cell.configure(emoji: item.siteEmoji,
-                       title: item.title,
-                       meta: "\(item.siteName) · \(FavoriteStore.shared.folderName(for: item.folderId)) · \(Self.dateText(item.createdAt))")
+        let folder = folderRows[indexPath.row]
+        let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
+                                                 for: indexPath) as! SiteRowCell
+        cell.configure(emoji: "📁",
+                       title: folder.name,
+                       subtitle: "\(FavoriteStore.shared.count(in: folder.id)) 条收藏")
         return cell
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        if indexPath.section == 0 {
-            let row = folderRows[indexPath.row]
-            openFolder(row.id, title: row.name)
-            return
-        }
-        guard indexPath.row < recentItems.count else { return }
-        let item = recentItems[indexPath.row]
-        navigationController?.pushViewController(
-            WebViewController(title: item.siteName, urlString: item.url),
-            animated: true)
+        guard indexPath.row < folderRows.count else { return }
+        openFolder(folderRows[indexPath.row])
     }
 
     override func tableView(_ tableView: UITableView,
                             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        if indexPath.section == 0 {
-            let row = folderRows[indexPath.row]
-            guard let folderId = row.id,
-                  let folder = FavoriteStore.shared.folders.first(where: { $0.id == folderId }) else { return nil }
-            let rename = UIContextualAction(style: .normal, title: "重命名") { [weak self] _, _, completion in
-                self?.presentFolderEditor(existing: folder)
-                completion(true)
-            }
-            rename.backgroundColor = Theme.accentSoft
-            let delete = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, completion in
-                self?.confirmDeleteFolder(folder)
-                completion(true)
-            }
-            return UISwipeActionsConfiguration(actions: [delete, rename])
-        }
-        guard indexPath.row < recentItems.count else { return nil }
-        let item = recentItems[indexPath.row]
-        let move = UIContextualAction(style: .normal, title: "移动") { [weak self] _, _, completion in
-            self?.presentMovePicker(item: item)
+        guard indexPath.row < folderRows.count else { return nil }
+        let folder = folderRows[indexPath.row]
+        let rename = UIContextualAction(style: .normal, title: "重命名") { [weak self] _, _, completion in
+            self?.presentFolderEditor(existing: folder)
             completion(true)
         }
-        move.backgroundColor = Theme.accentSoft
+        rename.backgroundColor = Theme.accentSoft
         let delete = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, completion in
-            FavoriteStore.shared.remove(id: item.id)
-            self?.tableView.reloadData()
-            self?.updateEmptyHint()
-            self?.updateNavTitle()
+            self?.confirmDeleteFolder(folder)
             completion(true)
         }
-        return UISwipeActionsConfiguration(actions: [delete, move])
-    }
-
-    private static func dateText(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MM-dd HH:mm"
-        return formatter.string(from: date)
+        return UISwipeActionsConfiguration(actions: [delete, rename])
     }
 }

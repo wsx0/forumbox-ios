@@ -1,6 +1,6 @@
 import UIKit
 
-/// 收藏夹详情：某个收藏夹（或未分类）里的收藏列表
+/// 收藏夹详情：某个收藏夹里的收藏列表
 final class FavoritesListViewController: UITableViewController {
 
     private let folderId: UUID?
@@ -63,14 +63,13 @@ final class FavoritesListViewController: UITableViewController {
     }
 
     private func presentMovePicker(item: FavoriteItem) {
-        let sheet = UIAlertController(title: "移动到收藏夹", message: nil, preferredStyle: .actionSheet)
-        if item.folderId != nil {
-            sheet.addAction(UIAlertAction(title: "未分类", style: .default) { [weak self] _ in
-                FavoriteStore.shared.move(id: item.id, to: nil)
-                self?.loadItems()
-            })
+        let targets = FavoriteStore.shared.folders.filter { $0.id != item.folderId }
+        guard !targets.isEmpty else {
+            presentNotice("没有其他收藏夹，请先在收藏页新建")
+            return
         }
-        for folder in FavoriteStore.shared.folders where folder.id != item.folderId {
+        let sheet = UIAlertController(title: "移动到收藏夹", message: nil, preferredStyle: .actionSheet)
+        for folder in targets {
             sheet.addAction(UIAlertAction(title: folder.name, style: .default) { [weak self] _ in
                 FavoriteStore.shared.move(id: item.id, to: folder.id)
                 self?.loadItems()
@@ -78,7 +77,8 @@ final class FavoritesListViewController: UITableViewController {
         }
         sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
         if let pop = sheet.popoverPresentationController {
-            pop.barButtonItem = navigationItem.leftBarButtonItem
+            pop.sourceView = view
+            pop.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
         }
         present(sheet, animated: true)
     }
