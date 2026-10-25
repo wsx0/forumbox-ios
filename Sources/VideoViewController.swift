@@ -1,10 +1,10 @@
 import UIKit
 import SafariServices
 
-/// 视频 Tab：固定头部 + 站点列表（无最近观看、无粘贴按钮）
+/// 视频 Tab：固定头部 + 两列站点卡片
 final class VideoViewController: UIViewController,
-                                UITableViewDataSource,
-                                UITableViewDelegate,
+                                UICollectionViewDataSource,
+                                UICollectionViewDelegateFlowLayout,
                                 UITextFieldDelegate,
                                 ScrollToTopable {
 
@@ -14,7 +14,22 @@ final class VideoViewController: UIViewController,
     private let inputContainer = UIView()
     private let inputField = UITextField()
     private let openButton = UIButton(type: .system)
-    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+
+    private lazy var collectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.minimumInteritemSpacing = 10
+        layout.minimumLineSpacing = 10
+        layout.sectionInset = UIEdgeInsets(top: 10, left: 16, bottom: 24, right: 16)
+        let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        view.backgroundColor = .clear
+        view.alwaysBounceVertical = true
+        view.keyboardDismissMode = .onDrag
+        view.dataSource = self
+        view.delegate = self
+        view.register(VideoSiteCard.self,
+                      forCellWithReuseIdentifier: VideoSiteCard.reuseID)
+        return view
+    }()
 
     private let sites = VideoSites.all
 
@@ -23,15 +38,14 @@ final class VideoViewController: UIViewController,
         CrashLogger.log("video tab loaded")
         view.backgroundColor = Theme.bgTop
         setupHeader()
-        setupTable()
-        tableView.reloadData()
+        setupGrid()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         CrashLogger.log("video tab will appear")
         navigationController?.setNavigationBarHidden(true, animated: animated)
-        tableView.reloadData()
+        collectionView.reloadData()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -41,7 +55,7 @@ final class VideoViewController: UIViewController,
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        tableView.backgroundView?.frame = tableView.bounds
+        collectionView.backgroundView?.frame = collectionView.bounds
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { Theme.statusBarStyle }
@@ -51,8 +65,8 @@ final class VideoViewController: UIViewController,
     }
 
     func scrollToTop() {
-        let top = -tableView.adjustedContentInset.top
-        tableView.setContentOffset(CGPoint(x: 0, y: top), animated: true)
+        let top = -collectionView.adjustedContentInset.top
+        collectionView.setContentOffset(CGPoint(x: 0, y: top), animated: true)
     }
 
     // MARK: - 头部
@@ -68,7 +82,7 @@ final class VideoViewController: UIViewController,
         headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerTitleLabel)
 
-        headerSubtitleLabel.text = "输入链接或点下方站点观看"
+        headerSubtitleLabel.text = "输入链接，或点卡片在 App 内观看"
         headerSubtitleLabel.font = Theme.font(12, .regular)
         headerSubtitleLabel.textColor = Theme.textDim
         headerSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -136,31 +150,20 @@ final class VideoViewController: UIViewController,
         ])
     }
 
-    private func setupTable() {
-        tableView.backgroundColor = .clear
-        tableView.separatorStyle = .singleLine
-        tableView.separatorColor = Theme.cardBorder
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 16)
-        tableView.rowHeight = 68
-        tableView.sectionHeaderTopPadding = 12
-        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
-        tableView.keyboardDismissMode = .onDrag
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.register(SiteRowCell.self, forCellReuseIdentifier: SiteRowCell.reuseID)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(tableView)
-        tableView.backgroundView = Theme.makeBackgroundView(tableView.bounds)
+    private func setupGrid() {
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(collectionView)
+        collectionView.backgroundView = Theme.makeBackgroundView(collectionView.bounds)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: header.bottomAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            collectionView.topAnchor.constraint(equalTo: header.bottomAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
-    // MARK: - 打开链接
+    // MARK: - 链接
 
     @objc private func openTypedURL() {
         var text = (inputField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -183,6 +186,11 @@ final class VideoViewController: UIViewController,
         openVideo(url: url)
     }
 
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        openTypedURL()
+        return true
+    }
+
     @objc private func openButtonDown() {
         openButton.alpha = 0.78
     }
@@ -191,11 +199,6 @@ final class VideoViewController: UIViewController,
         UIView.animate(withDuration: 0.15) {
             self.openButton.alpha = 1
         }
-    }
-
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        openTypedURL()
-        return true
     }
 
     private func openVideo(url: URL, title: String? = nil) {
@@ -221,45 +224,129 @@ final class VideoViewController: UIViewController,
         navigationController?.pushViewController(controller, animated: true)
     }
 
-    // MARK: - 表格
+    // MARK: - 卡片
 
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
-
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return sites.count
     }
 
-    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return "站点"
-    }
-
-    func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
-        guard let header = view as? UITableViewHeaderFooterView else { return }
-        header.textLabel?.font = Theme.font(13, .semibold)
-        header.textLabel?.textColor = Theme.textDim
-    }
-
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 68 * AppSettings.shared.fontScale
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let site = sites[indexPath.row]
-        let cell = tableView.dequeueReusableCell(withIdentifier: SiteRowCell.reuseID,
-                                                 for: indexPath) as! SiteRowCell
-        cell.configure(emoji: site.emoji,
-                       title: site.name,
-                       subtitle: site.note,
-                       preferEmoji: true)
+    func collectionView(_ collectionView: UICollectionView,
+                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: VideoSiteCard.reuseID,
+                                                      for: indexPath) as! VideoSiteCard
+        cell.configure(site: sites[indexPath.item])
         return cell
     }
 
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        guard indexPath.row < sites.count,
-              let url = URL(string: sites[indexPath.row].url) else { return }
-        openVideo(url: url, title: sites[indexPath.row].name)
+    func collectionView(_ collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        let spacing: CGFloat = 10
+        let available = collectionView.bounds.width - 32 - spacing
+        let width = max(120, available / 2)
+        return CGSize(width: width, height: 108)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: true)
+        guard indexPath.item < sites.count,
+              let url = URL(string: sites[indexPath.item].url) else { return }
+        openVideo(url: url, title: sites[indexPath.item].name)
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        contextMenuConfigurationForItemAt indexPath: IndexPath,
+                        point: CGPoint) -> UIContextMenuConfiguration? {
+        guard indexPath.item < sites.count else { return nil }
+        let site = sites[indexPath.item]
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+            let copy = UIAction(title: "复制链接",
+                                image: UIImage(systemName: "link")) { _ in
+                UIPasteboard.general.string = site.url
+                Haptics.success()
+            }
+            return UIMenu(title: site.name, children: [copy])
+        }
+    }
+}
+
+/// 视频站点卡片
+final class VideoSiteCard: UICollectionViewCell {
+
+    static let reuseID = "VideoSiteCard"
+
+    private let emojiLabel = UILabel()
+    private let titleLabel = UILabel()
+    private let hostLabel = UILabel()
+    private let playIcon = UIImageView()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        contentView.backgroundColor = Theme.card
+        contentView.layer.cornerRadius = 16
+        contentView.layer.borderWidth = 1
+        contentView.layer.borderColor = Theme.cardBorder.cgColor
+        contentView.layer.masksToBounds = true
+
+        emojiLabel.font = .systemFont(ofSize: 28)
+        emojiLabel.textColor = Theme.text
+        emojiLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(emojiLabel)
+
+        playIcon.image = UIImage(systemName: "play.circle.fill")
+        playIcon.tintColor = Theme.accent
+        playIcon.alpha = 0.9
+        playIcon.contentMode = .scaleAspectFit
+        playIcon.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(playIcon)
+
+        titleLabel.font = Theme.rounded(15, .semibold)
+        titleLabel.textColor = Theme.text
+        titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(titleLabel)
+
+        hostLabel.font = Theme.font(12, .regular)
+        hostLabel.textColor = Theme.textDim
+        hostLabel.lineBreakMode = .byTruncatingTail
+        hostLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(hostLabel)
+
+        NSLayoutConstraint.activate([
+            emojiLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 14),
+            emojiLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+
+            playIcon.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -14),
+            playIcon.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 14),
+            playIcon.widthAnchor.constraint(equalToConstant: 20),
+            playIcon.heightAnchor.constraint(equalToConstant: 20),
+
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 14),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -14),
+            titleLabel.topAnchor.constraint(equalTo: emojiLabel.bottomAnchor, constant: 11),
+
+            hostLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            hostLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            hostLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 3),
+            hostLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -12)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var isHighlighted: Bool {
+        didSet {
+            UIView.animate(withDuration: 0.12) {
+                self.contentView.alpha = self.isHighlighted ? 0.72 : 1
+            }
+        }
+    }
+
+    func configure(site: VideoSite) {
+        emojiLabel.text = site.emoji
+        titleLabel.text = site.name
+        hostLabel.text = site.note
     }
 }
