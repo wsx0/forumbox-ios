@@ -9,8 +9,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "3.28.0"
-    CURRENT_PROJECT_VERSION: "65"
+    MARKETING_VERSION: "3.29.0"
+    CURRENT_PROJECT_VERSION: "66"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     SUPPORTS_MACCATALYST: "NO"
 
@@ -46,7 +46,7 @@ targets:
     info:
       path: Support/Info.plist
       properties:
-        CFBundleDisplayName: "论坛盒子"
+        CFBundleDisplayName: "赛博盒子"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIcons:
