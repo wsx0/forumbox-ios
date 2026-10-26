@@ -6,6 +6,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
 
     private enum Row {
         case appIcon
+        case favorites
         case theme
         case font
         case fontSize
@@ -108,7 +109,7 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
             appearance.append(.removeBackground)
         }
         appearance.append(.resetAppearance)
-        rows = [personalization, appearance, [.videoPlayer], [.manageVideoSites, .manageSites], [.version]]
+        rows = [personalization, [.favorites], appearance, [.videoPlayer], [.manageVideoSites, .manageSites], [.version]]
     }
 
     // MARK: - 表格
@@ -124,9 +125,10 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch section {
         case 0: return "个性化"
-        case 1: return "外观"
-        case 2: return "视频"
-        case 3: return "站点"
+        case 1: return "收藏"
+        case 2: return "外观"
+        case 3: return "视频"
+        case 4: return "站点"
         default: return "关于"
         }
     }
@@ -151,6 +153,13 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
                            value: AppIcons.currentName,
                            showsChevron: true,
                            icon: "app.badge")
+        case .favorites:
+            let videoCount = VideoFavoriteStore.shared.items.count
+            let forumCount = FavoriteStore.shared.items.count
+            cell.configure(title: "收藏",
+                           value: "视频 \(videoCount) · 论坛 \(forumCount)",
+                           showsChevron: true,
+                           icon: "star.fill")
         case .theme:
             cell.configure(title: "主题", value: ThemeManager.shared.style.displayName, showsChevron: true, icon: "paintpalette.fill")
         case .font:
@@ -192,6 +201,9 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
         switch row {
         case .appIcon:
             navigationController?.pushViewController(AppIconPickerViewController(), animated: true)
+        case .favorites:
+            navigationController?.pushViewController(FavoritesViewController(style: .insetGrouped),
+                                                     animated: true)
         case .theme:
             ThemePicker.present(from: self, sourceView: tableView.cellForRow(at: indexPath) ?? view)
         case .font:

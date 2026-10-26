@@ -46,7 +46,7 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
         tableView.register(FavoritesEmptyCell.self,
                            forCellReuseIdentifier: FavoritesEmptyCell.reuseID)
         navigationItem.backButtonDisplayMode = .minimal
-        navigationItem.title = "收藏"
+        navigationItem.title = ""
         navigationItem.leftBarButtonItem = nil
         navigationItem.rightBarButtonItems = nil
         navigationController?.navigationBar.prefersLargeTitles = false
@@ -76,7 +76,7 @@ final class FavoritesViewController: UITableViewController, ScrollToTopable {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
         reloadData()
     }
 
