@@ -239,8 +239,15 @@ final class SettingsViewController: UITableViewController, ScrollToTopable {
                                       preferredStyle: .actionSheet)
         let system = AppSettings.shared.videoUseSystemPlayer ? "系统播放器（兼容）  ✓" : "系统播放器（兼容）"
         sheet.addAction(UIAlertAction(title: system, style: .default) { [weak self] _ in
-            AppSettings.shared.videoUseSystemPlayer = true
-            self?.tableView.reloadData()
+            let alert = UIAlertController(title: "系统播放器不拦截广告",
+                                          message: "系统播放器使用站点自带广告；要广告少请用内置播放器。",
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+            alert.addAction(UIAlertAction(title: "仍要切换", style: .destructive) { [weak self] _ in
+                AppSettings.shared.videoUseSystemPlayer = true
+                self?.tableView.reloadData()
+            })
+            self?.present(alert, animated: true)
         })
         let builtin = AppSettings.shared.videoUseSystemPlayer ? "内置播放器（去广告）" : "内置播放器（去广告）  ✓"
         sheet.addAction(UIAlertAction(title: builtin, style: .default) { [weak self] _ in

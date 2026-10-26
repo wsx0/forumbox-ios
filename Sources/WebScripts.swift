@@ -69,33 +69,82 @@ enum WebScripts {
     """
 
 
-    /// 视频模式：清理常见广告位 / 浮层 / 弹窗容器
+    /// 视频模式：清理广告位 / 浮层 / 弹窗 / 跳过按钮
     static let videoAdCleaner = """
     (function () {
         try {
             var selectors = [
-                '.adsbygoogle', '[data-ad]', '[data-ad-slot]', '[data-ad-client]',
-                '[id^="ad-"]', '[id*="-ad-"]', '[id$="-ad"]',
-                '[class^="ad-"]', '[class*="-ad-"]', '[class$="-ad-"]',
-                '.advertisement', '.advert', '.ad-container', '.ad-wrapper',
-                '.ad-banner', '.ad-slot', '.popunder', '.popup-ad',
-                '.sticky-ad', '.floating-ad', '.overlay-ad',
-                '[class*="advert"]', '[id*="advert"]'
+                '.adsbygoogle', '[data-ad]', '[data-ad-slot]', '[data-ad-client]', '[data-advertisement]',
+                '[id^="ad-"]', '[id*="-ad-"]', '[id$="-ad"]', '[id="ad"]', '[id="ads"]',
+                '[class^="ad-"]', '[class*="-ad-"]', '[class$="-ad"]',
+                '.ad', '.ads', '.advertisement', '.advert',
+                '.ad-container', '.ad-wrapper', '.ad-banner', '.ad-slot', '.ad-box',
+                '.ad-block', '.ad-zone', '.ad-area', '.ad-placeholder', '.ad-space',
+                '.ad-unit', '.ad-holder', '.ad-frame', '.ad-content', '.ad-label',
+                '.ad-overlay', '.ad-float', '.ad-sticky', '.ad-popup', '.ad-modal',
+                '.video-ad', '.preroll', '.midroll',
+                '.popunder', '.popup-ad', '.sticky-ad', '.floating-ad', '.overlay-ad',
+                '[class*="advert"]', '[id*="advert"]', '[class*="popunder"]', '[id*="popunder"]',
+                '[class*="sponsor-ad"]'
             ];
+            var adHosts = [
+                'exoclick.com', 'exosrv.com', 'juicyads.com', 'juicyads.net',
+                'trafficjunky.net', 'trafficjunky.com', 'trafficstars.com',
+                'exdynsrv.com', 'magsrv.com', 'bngprm.com', 'adsco.re', 'prpnads.com',
+                'popads.net', 'popcash.net', 'clickadu.com', 'propellerads.com',
+                'adsterra.com', 'hilltopads.net', 'tsyndicate.com', 'realsrv.com',
+                'doubleclick.net', 'googlesyndication.com', 'googleadservices.com',
+                'adnxs.com', 'taboola.com', 'outbrain.com', 'mgid.com'
+            ];
+            var skipWords = ['跳过广告', '跳过', 'skipad', 'skip'];
+            function ensureCSS() {
+                if (document.getElementById('fb-ad-css')) return;
+                var style = document.createElement('style');
+                style.id = 'fb-ad-css';
+                style.type = 'text/css';
+                style.appendChild(document.createTextNode(selectors.join(',') + '{display:none !important;}'));
+                (document.head || document.documentElement).appendChild(style);
+            }
+            function isAdHref(href) {
+                if (!href) return false;
+                for (var i = 0; i < adHosts.length; i++) {
+                    if (href.indexOf(adHosts[i]) >= 0) return true;
+                }
+                return false;
+            }
             function clean() {
+                ensureCSS();
                 for (var i = 0; i < selectors.length; i++) {
                     var list = document.querySelectorAll(selectors[i]);
                     for (var j = 0; j < list.length; j++) {
                         try { list[j].remove(); } catch (e) {}
                     }
                 }
+                var links = document.querySelectorAll('a[href]');
+                for (var k = 0; k < links.length; k++) {
+                    try {
+                        if (isAdHref(links[k].href)) links[k].remove();
+                    } catch (e) {}
+                }
+                var frames = document.querySelectorAll('iframe[src]');
+                for (var f = 0; f < frames.length; f++) {
+                    try {
+                        if (isAdHref(frames[f].src)) frames[f].remove();
+                    } catch (e) {}
+                }
+                var nodes = document.querySelectorAll('button,a,div,span');
+                for (var n = 0; n < nodes.length; n++) {
+                    try {
+                        var text = (nodes[n].textContent || '').replace(/ /g, '').trim().toLowerCase();
+                        if (skipWords.indexOf(text) >= 0) nodes[n].click();
+                    } catch (e) {}
+                }
             }
             clean();
-            setInterval(clean, 2000);
+            setInterval(clean, 1500);
         } catch (e) {}
     })();
     """
-
 
     /// 视频模式：提取页面真实标题与缩略图（og:title / og:image / video poster）
     static let videoMetadata = """
@@ -169,6 +218,36 @@ enum WebScripts {
         } catch (e) {
             return { height: 0, width: 0, rate: 1, qualities: [] };
         }
+    })();
+    """
+
+
+    /// 全站广告样式：文档开始时挂 CSS，先隐藏再清理
+    static let adBlockCSS = """
+    (function () {
+        try {
+            if (document.getElementById('fb-ad-css')) return;
+            var selectors = [
+                '.adsbygoogle', '[data-ad]', '[data-ad-slot]', '[data-ad-client]', '[data-advertisement]',
+                '[id^="ad-"]', '[id*="-ad-"]', '[id$="-ad"]', '[id="ad"]', '[id="ads"]',
+                '[class^="ad-"]', '[class*="-ad-"]', '[class$="-ad"]',
+                '.ad', '.ads', '.advertisement', '.advert',
+                '.ad-container', '.ad-wrapper', '.ad-banner', '.ad-slot', '.ad-box',
+                '.ad-block', '.ad-zone', '.ad-area', '.ad-placeholder', '.ad-space',
+                '.ad-unit', '.ad-holder', '.ad-frame', '.ad-content', '.ad-label',
+                '.ad-overlay', '.ad-float', '.ad-sticky', '.ad-popup', '.ad-modal',
+                '.video-ad', '.preroll', '.midroll',
+                '.popunder', '.popup-ad', '.sticky-ad', '.floating-ad', '.overlay-ad',
+                '[class*="advert"]', '[id*="advert"]', '[class*="popunder"]', '[id*="popunder"]',
+                '[class*="sponsor-ad"]'
+            ];
+            var css = selectors.join(',') + '{display:none !important;}';
+            var style = document.createElement('style');
+            style.id = 'fb-ad-css';
+            style.type = 'text/css';
+            style.appendChild(document.createTextNode(css));
+            (document.head || document.documentElement).appendChild(style);
+        } catch (e) {}
     })();
     """
 }

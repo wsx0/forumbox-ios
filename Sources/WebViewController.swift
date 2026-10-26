@@ -168,6 +168,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         ucc.addUserScript(WKUserScript(source: WebScripts.popupSuppressor,
                                        injectionTime: .atDocumentStart,
                                        forMainFrameOnly: false))
+        if adBlockEnabled || videoMode {
+            ucc.addUserScript(WKUserScript(source: WebScripts.adBlockCSS,
+                                           injectionTime: .atDocumentStart,
+                                           forMainFrameOnly: false))
+        }
         // ED2K 链接识别 + 悬浮「转存 115」按钮（视频模式不需要）
         if !videoMode {
             ucc.add(WeakScriptHandler(delegate: self), name: "ed2k")
@@ -959,6 +964,10 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             return
         }
         let scheme = (url.scheme ?? "").lowercased()
+        if (scheme == "http" || scheme == "https") && AdBlock.isAdURL(url) {
+            decisionHandler(.cancel)
+            return
+        }
         if scheme == "ed2k" {
             decisionHandler(.cancel)
             presentED2KActions(link: url.absoluteString)
@@ -983,7 +992,9 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
                  createWebViewWith configuration: WKWebViewConfiguration,
                  for navigationAction: WKNavigationAction,
                  windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+        guard let url = navigationAction.request.url, !AdBlock.isAdURL(url) else { return nil }
+        if videoMode { return nil }
+        if navigationAction.targetFrame == nil {
             webView.load(URLRequest(url: url))
         }
         return nil

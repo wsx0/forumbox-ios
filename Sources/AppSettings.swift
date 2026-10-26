@@ -58,7 +58,7 @@ final class AppSettings {
 
     private let fontChoiceKey = "fb_font_choice"
     private let fontScaleKey = "fb_font_scale"
-    private let videoSystemPlayerKey = "fb_video_system_player"
+    private let videoSystemPlayerKey = "fb_video_system_player_v2"
     private let backgroundFileName = "fb_background.jpg"
     private var cachedBackground: UIImage?
     private var didLoadBackground = false
